@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   user: { name: string; email: string };
@@ -80,20 +82,24 @@ export default function Sidebar({ user, isMobileOpen, setMobileOpen }: SidebarPr
 
         <div className="px-3 py-4 border-t border-zinc-200 space-y-3">
           <div className="flex items-center gap-2.5 px-2">
-            <div className="w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-semibold text-white">{initials}</span>
-            </div>
+            <Avatar className="h-7 w-7 flex-shrink-0">
+              <AvatarFallback className="text-[10px] font-semibold bg-zinc-900 text-white">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0">
               <p className="text-xs font-medium text-zinc-900 truncate">{user.name}</p>
               <p className="text-[11px] text-zinc-400 truncate">{user.email}</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleSignOut}
-            className="w-full text-left px-2 py-1.5 text-sm text-zinc-400 hover:text-zinc-900 rounded hover:bg-zinc-50 transition-colors"
+            className="w-full justify-start text-zinc-400 hover:text-zinc-900 px-2"
           >
             Sign out
-          </button>
+          </Button>
         </div>
       </aside>
     </>

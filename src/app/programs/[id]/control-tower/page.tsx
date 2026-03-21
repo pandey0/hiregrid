@@ -3,12 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
-type HealthResult = { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className?: string };
+type HealthResult = {
+  label: string;
+  variant: "default" | "secondary" | "outline" | "destructive";
+  className?: string;
+};
 
 function healthLabel(supply: number, demand: number): HealthResult {
   if (demand === 0) return { label: "No demand", variant: "secondary" };
@@ -45,10 +57,27 @@ export default async function ControlTowerPage({ params }: { params: Promise<{ i
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
-          <Link href={`/programs/${id}`}>← {program.name}</Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Control Tower</h1>
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/programs/${id}`}>{program.name}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Control Tower</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Control Tower</h1>
         <p className="text-sm text-zinc-400 mt-1">Supply vs. demand health per round.</p>
       </div>
 
@@ -100,15 +129,18 @@ export default async function ControlTowerPage({ params }: { params: Promise<{ i
                   </div>
 
                   {supply < demand && (
-                    <div className="mt-4 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg">
-                      <p className="text-xs text-red-600">
+                    <Alert variant="destructive" className="mt-4 py-2.5">
+                      <AlertDescription className="text-xs">
                         {demand - supply} candidate{demand - supply !== 1 ? "s" : ""} without available slots.{" "}
-                        <Link href={`/programs/${id}/panelists`} className="underline underline-offset-2">
+                        <Link
+                          href={`/programs/${id}/panelists`}
+                          className="underline underline-offset-2 font-medium"
+                        >
                           Invite more panelists
                         </Link>{" "}
                         or ask existing ones to add slots.
-                      </p>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </CardContent>
               </Card>

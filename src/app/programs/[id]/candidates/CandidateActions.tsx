@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { shortlistAndActivate, rejectCandidate } from "@/actions/candidates";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -51,43 +59,61 @@ export default function CandidateActions({
     });
   }
 
+  if (status === "ACTIVE" || status === "BOOKED") {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={reject}
+        disabled={isPending}
+        className="h-7 text-xs text-zinc-300 hover:text-red-500 hover:bg-red-50"
+      >
+        Reject
+      </Button>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
-      {(status === "DRAFT" || status === "SHORTLISTED") && rounds.length > 0 && (
-        <>
-          <Select value={selectedRoundId} onValueChange={setSelectedRoundId}>
-            <SelectTrigger className="h-7 text-xs w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {rounds.map((r) => (
-                <SelectItem key={r.id} value={String(r.id)} className="text-xs">
-                  R{r.roundNumber}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <Select value={selectedRoundId} onValueChange={setSelectedRoundId}>
+        <SelectTrigger className="h-7 text-xs w-20">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {rounds.map((r) => (
+            <SelectItem key={r.id} value={String(r.id)} className="text-xs">
+              R{r.roundNumber}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
+            variant="outline"
             size="sm"
-            onClick={activate}
             disabled={isPending}
-            className="h-7 text-xs px-2.5"
+            className="h-7 text-xs px-2"
           >
-            Activate
+            Actions
           </Button>
-        </>
-      )}
-      {status !== "REJECTED" && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={reject}
-          disabled={isPending}
-          className="h-7 text-xs text-zinc-300 hover:text-red-500 hover:bg-red-50"
-        >
-          Reject
-        </Button>
-      )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuLabel className="text-xs text-zinc-400">Candidate actions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={activate} className="text-xs cursor-pointer">
+            Activate for booking
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={reject}
+            className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+          >
+            Reject candidate
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

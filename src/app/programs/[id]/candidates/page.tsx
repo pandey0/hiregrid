@@ -5,9 +5,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import AddCandidateForm from "./AddCandidateForm";
 import CandidateActions from "./CandidateActions";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -16,6 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className?: string }> = {
   DRAFT:       { label: "Draft",       variant: "secondary" },
@@ -50,10 +58,27 @@ export default async function CandidatesPage({ params }: { params: Promise<{ id:
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
-          <Link href={`/programs/${id}`}>← {program.name}</Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Candidates</h1>
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/programs/${id}`}>{program.name}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Candidates</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Candidates</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Add candidates, review ATS scores, then shortlist and activate for booking.
         </p>
@@ -82,24 +107,28 @@ export default async function CandidatesPage({ params }: { params: Promise<{ id:
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Score</TableHead>
+                  <TableHead>ATS Score</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Round</TableHead>
-                  <TableHead className="w-40"></TableHead>
+                  <TableHead className="w-44"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {program.candidates.map((c) => {
                   const cfg = statusConfig[c.status] ?? { label: c.status, variant: "secondary" as const };
+                  const score = c.atsScore !== null && c.atsScore !== undefined ? Math.round(c.atsScore) : null;
                   return (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium text-zinc-900">{c.name}</TableCell>
                       <TableCell className="text-zinc-500">{c.email}</TableCell>
                       <TableCell>
-                        {c.atsScore !== null && c.atsScore !== undefined ? (
-                          <span className="font-mono text-zinc-900">{Math.round(c.atsScore)}</span>
+                        {score !== null ? (
+                          <div className="flex items-center gap-2 min-w-24">
+                            <Progress value={score} className="h-1.5 w-16" />
+                            <span className="text-xs font-mono text-zinc-600 tabular-nums">{score}</span>
+                          </div>
                         ) : (
-                          <span className="text-zinc-300">—</span>
+                          <span className="text-zinc-300 text-sm">—</span>
                         )}
                       </TableCell>
                       <TableCell>

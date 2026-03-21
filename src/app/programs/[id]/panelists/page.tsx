@@ -17,6 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 function formatSlots(slots: unknown): number {
   if (!Array.isArray(slots)) return 0;
@@ -49,10 +57,27 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
-          <Link href={`/programs/${id}`}>← {program.name}</Link>
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Panelists</h1>
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/programs/${id}`}>{program.name}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Panelists</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Panelists</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Invite panelists to a round. They receive a private link to submit their availability — no account needed.
         </p>

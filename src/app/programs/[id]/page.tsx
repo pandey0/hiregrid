@@ -7,6 +7,14 @@ import DeleteProgramButton from "./DeleteProgramButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const roundTypeLabel: Record<string, string> = {
   ATS_SCREENING: "ATS",
@@ -42,10 +50,21 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
-          <Link href="/dashboard">← Dashboard</Link>
-        </Button>
-        <div className="flex items-start justify-between mt-1">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{program.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">{program.name}</h1>
             {program.description && (
