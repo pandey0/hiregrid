@@ -1,16 +1,20 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function CopyButton({ value }: { value: string }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={() => {
         navigator.clipboard?.writeText(value);
       }}
-      className="text-xs text-zinc-400 hover:text-zinc-700 transition-colors underline underline-offset-2"
       title={value}
+      className="text-xs h-7 px-2 text-zinc-400 hover:text-zinc-700"
     >
       Copy link
-    </button>
+    </Button>
   );
 }

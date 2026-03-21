@@ -4,6 +4,18 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createProgram } from "@/actions/programs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Round = {
   name: string;
@@ -71,131 +83,129 @@ export default function CreateProgramForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-zinc-600 mb-1.5">Program name</label>
-          <input
-            name="name"
-            required
-            placeholder="e.g. Senior Frontend Engineer Hiring Drive"
-            className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-600 mb-1.5">Description</label>
-          <textarea
-            name="description"
-            rows={2}
-            placeholder="What is this program for?"
-            className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 resize-none"
-          />
-        </div>
-      </div>
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="prog-name">Program name</Label>
+            <Input
+              id="prog-name"
+              name="name"
+              required
+              placeholder="e.g. Senior Frontend Engineer Hiring Drive"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="prog-desc">Description</Label>
+            <Textarea
+              id="prog-desc"
+              name="description"
+              rows={2}
+              placeholder="What is this program for?"
+              className="resize-none"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">Rounds</p>
-          <button
-            type="button"
-            onClick={addRound}
-            className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={addRound} className="text-xs h-7">
             + Add round
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-3">
           {rounds.map((round, index) => (
-            <div
-              key={index}
-              className="bg-white border border-zinc-200 rounded-xl p-5 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400 font-medium">Round {index + 1}</span>
-                {rounds.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeRound(index)}
-                    className="text-xs text-zinc-300 hover:text-red-400 transition-colors"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Round name</label>
-                  <input
-                    value={round.name}
-                    onChange={(e) => updateRound(index, "name", e.target.value)}
-                    placeholder="e.g. Technical Interview"
-                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">Type</label>
-                  <select
-                    value={round.roundType}
-                    onChange={(e) => updateRound(index, "roundType", e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-                  >
-                    {Object.entries(roundTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {round.roundType !== "ATS_SCREENING" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Duration (minutes)</label>
-                    <select
-                      value={round.durationMinutes}
-                      onChange={(e) => updateRound(index, "durationMinutes", parseInt(e.target.value))}
-                      className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
+            <Card key={index}>
+              <CardContent className="pt-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-400 font-medium">Round {index + 1}</span>
+                  {rounds.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeRound(index)}
+                      className="text-xs h-6 text-zinc-300 hover:text-red-500 hover:bg-red-50"
                     >
-                      {[30, 45, 60, 75, 90, 120].map((m) => (
-                        <option key={m} value={m}>
-                          {m} min
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-600 mb-1.5">Description (optional)</label>
-                    <input
-                      value={round.description}
-                      onChange={(e) => updateRound(index, "description", e.target.value)}
-                      placeholder="Optional notes"
-                      className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
+                      Remove
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Round name</Label>
+                    <Input
+                      value={round.name}
+                      onChange={(e) => updateRound(index, "name", e.target.value)}
+                      placeholder="e.g. Technical Interview"
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label>Type</Label>
+                    <Select
+                      value={round.roundType}
+                      onValueChange={(v) => updateRound(index, "roundType", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(roundTypeLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {round.roundType !== "ATS_SCREENING" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Duration (minutes)</Label>
+                      <Select
+                        value={String(round.durationMinutes)}
+                        onValueChange={(v) => updateRound(index, "durationMinutes", parseInt(v))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[30, 45, 60, 75, 90, 120].map((m) => (
+                            <SelectItem key={m} value={String(m)}>
+                              {m} min
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Description (optional)</Label>
+                      <Input
+                        value={round.description}
+                        onChange={(e) => updateRound(index, "description", e.target.value)}
+                        placeholder="Optional notes"
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
 
       <div className="flex items-center justify-between pt-2">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors"
-        >
+        <Button type="button" variant="ghost" onClick={() => router.back()} className="text-zinc-400">
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="px-5 py-2 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" disabled={isPending}>
           {isPending ? "Creating..." : "Create program"}
-        </button>
+        </Button>
       </div>
     </form>
   );

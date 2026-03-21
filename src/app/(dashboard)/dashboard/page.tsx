@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -45,12 +48,9 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">Hiring overview</p>
         </div>
-        <Link
-          href="/programs/create"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors"
-        >
-          New program
-        </Link>
+        <Button asChild>
+          <Link href="/programs/create">New program</Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
@@ -60,22 +60,21 @@ export default async function DashboardPage() {
           { label: "Active bookings", value: bookings },
           { label: "Completed", value: completedBookings },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white border border-zinc-200 rounded-lg px-5 py-4">
-            <p className="text-2xl font-semibold tabular-nums text-zinc-900">{stat.value}</p>
-            <p className="text-xs text-zinc-400 mt-1">{stat.label}</p>
-          </div>
+          <Card key={stat.label}>
+            <CardContent className="pt-5 pb-4 px-5">
+              <p className="text-2xl font-semibold tabular-nums text-zinc-900">{stat.value}</p>
+              <p className="text-xs text-zinc-400 mt-1">{stat.label}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {programs.length === 0 ? (
         <div className="border border-dashed border-zinc-200 rounded-lg px-8 py-16 text-center">
           <p className="text-sm text-zinc-400 mb-4">No programs yet</p>
-          <Link
-            href="/programs/create"
-            className="inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors"
-          >
-            Create your first program
-          </Link>
+          <Button asChild>
+            <Link href="/programs/create">Create your first program</Link>
+          </Button>
         </div>
       ) : (
         <div>
@@ -97,9 +96,9 @@ export default async function DashboardPage() {
                     <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{program.description}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-5 text-xs text-zinc-400">
-                  <span>{program.rounds.length} rounds</span>
-                  <span>{program._count.candidates} candidates</span>
+                <div className="flex items-center gap-3 text-xs text-zinc-400">
+                  <Badge variant="secondary">{program.rounds.length} rounds</Badge>
+                  <Badge variant="secondary">{program._count.candidates} candidates</Badge>
                   <span className="text-zinc-300">→</span>
                 </div>
               </Link>

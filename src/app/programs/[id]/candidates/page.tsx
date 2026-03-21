@@ -5,14 +5,25 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import AddCandidateForm from "./AddCandidateForm";
 import CandidateActions from "./CandidateActions";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-const statusColors: Record<string, string> = {
-  DRAFT: "text-zinc-400",
-  SHORTLISTED: "text-amber-500",
-  ACTIVE: "text-blue-500",
-  BOOKED: "text-green-500",
-  COMPLETED: "text-zinc-900",
-  REJECTED: "text-red-400",
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className?: string }> = {
+  DRAFT:       { label: "Draft",       variant: "secondary" },
+  SHORTLISTED: { label: "Shortlisted", variant: "outline",     className: "border-amber-300 text-amber-600" },
+  ACTIVE:      { label: "Active",      variant: "default" },
+  BOOKED:      { label: "Booked",      variant: "outline",     className: "border-green-300 text-green-600" },
+  COMPLETED:   { label: "Completed",   variant: "secondary",   className: "text-zinc-900" },
+  REJECTED:    { label: "Rejected",    variant: "destructive" },
 };
 
 export default async function CandidatesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,19 +50,21 @@ export default async function CandidatesPage({ params }: { params: Promise<{ id:
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Link href={`/programs/${id}`} className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors">
-          ← {program.name}
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-3">Candidates</h1>
+        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
+          <Link href={`/programs/${id}`}>← {program.name}</Link>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Candidates</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Add candidates, review ATS scores, then shortlist and activate for booking.
         </p>
       </div>
 
-      <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-8">
-        <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-4">Add candidate</p>
-        <AddCandidateForm programId={program.id} />
-      </div>
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-4">Add candidate</p>
+          <AddCandidateForm programId={program.id} />
+        </CardContent>
+      </Card>
 
       <div>
         <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-3">
@@ -63,48 +76,53 @@ export default async function CandidatesPage({ params }: { params: Promise<{ id:
             No candidates yet.
           </div>
         ) : (
-          <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Name</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Email</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Score</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Status</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Round</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {program.candidates.map((c) => (
-                  <tr key={c.id} className="border-b border-zinc-50 last:border-0">
-                    <td className="px-5 py-3 font-medium text-zinc-900">{c.name}</td>
-                    <td className="px-5 py-3 text-zinc-500">{c.email}</td>
-                    <td className="px-5 py-3">
-                      {c.atsScore !== null && c.atsScore !== undefined ? (
-                        <span className="font-mono text-zinc-900">{Math.round(c.atsScore)}</span>
-                      ) : (
-                        <span className="text-zinc-300">—</span>
-                      )}
-                    </td>
-                    <td className={`px-5 py-3 text-xs font-medium ${statusColors[c.status] ?? "text-zinc-400"}`}>
-                      {c.status}
-                    </td>
-                    <td className="px-5 py-3 text-zinc-500">
-                      {c.activeRound?.name ?? <span className="text-zinc-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <CandidateActions
-                        candidateId={c.id}
-                        status={c.status}
-                        rounds={program.rounds}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Round</TableHead>
+                  <TableHead className="w-40"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {program.candidates.map((c) => {
+                  const cfg = statusConfig[c.status] ?? { label: c.status, variant: "secondary" as const };
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium text-zinc-900">{c.name}</TableCell>
+                      <TableCell className="text-zinc-500">{c.email}</TableCell>
+                      <TableCell>
+                        {c.atsScore !== null && c.atsScore !== undefined ? (
+                          <span className="font-mono text-zinc-900">{Math.round(c.atsScore)}</span>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={cfg.variant} className={cfg.className}>
+                          {cfg.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-zinc-500">
+                        {c.activeRound?.name ?? <span className="text-zinc-300">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        <CandidateActions
+                          candidateId={c.id}
+                          status={c.status}
+                          rounds={program.rounds}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </div>
     </div>

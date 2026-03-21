@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { deleteProgram } from "@/actions/programs";
+import { Button } from "@/components/ui/button";
 
 export default function DeleteProgramButton({ programId }: { programId: number }) {
   const [isPending, startTransition] = useTransition();
@@ -21,12 +22,14 @@ export default function DeleteProgramButton({ programId }: { programId: number }
   }
 
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={handleDelete}
       disabled={isPending}
-      className="text-xs text-zinc-300 hover:text-red-400 transition-colors disabled:opacity-50"
+      className="text-zinc-400 hover:text-red-500 hover:bg-red-50"
     >
       {isPending ? "Deleting..." : "Delete program"}
-    </button>
+    </Button>
   );
 }

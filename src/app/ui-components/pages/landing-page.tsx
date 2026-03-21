@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const features = [
   {
@@ -33,16 +34,13 @@ export default function LandingPage() {
       <header className="border-b border-zinc-100">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="text-sm font-semibold tracking-tight">HireGrid</span>
-          <nav className="flex items-center gap-6">
-            <Link href="/sign-in" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-              Sign in
-            </Link>
-            <Link
-              href="/sign-up"
-              className="text-sm font-medium px-4 py-1.5 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors"
-            >
-              Get started
-            </Link>
+          <nav className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/sign-up">Get started</Link>
+            </Button>
           </nav>
         </div>
       </header>
@@ -62,18 +60,12 @@ export default function LandingPage() {
               HireGrid coordinates multi-round hiring programs — scheduling panelists, AI-scoring resumes, and letting candidates self-book — all from a single control tower.
             </p>
             <div className="flex items-center gap-3">
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors"
-              >
-                Start free
-              </Link>
-              <Link
-                href="/sign-in"
-                className="inline-flex items-center px-5 py-2.5 text-zinc-600 text-sm font-medium border border-zinc-200 rounded-md hover:border-zinc-300 hover:text-zinc-900 transition-colors"
-              >
-                Sign in
-              </Link>
+              <Button asChild>
+                <Link href="/sign-up">Start free</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/sign-in">Sign in</Link>
+              </Button>
             </div>
           </div>
         </section>
@@ -104,12 +96,9 @@ export default function LandingPage() {
                 Create an account and set up your first program in minutes.
               </p>
             </div>
-            <Link
-              href="/sign-up"
-              className="flex-shrink-0 inline-flex items-center px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors"
-            >
-              Get started
-            </Link>
+            <Button asChild>
+              <Link href="/sign-up">Get started</Link>
+            </Button>
           </div>
         </section>
       </main>

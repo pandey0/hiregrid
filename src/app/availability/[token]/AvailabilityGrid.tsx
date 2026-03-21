@@ -3,6 +3,9 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveAvailability } from "@/actions/panelists";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Slot = { start: string; end: string };
 
@@ -82,37 +85,33 @@ export default function AvailabilityGrid({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-zinc-600 mb-1.5">Date</label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="slot-date">Date</Label>
+          <Input
+            id="slot-date"
             type="date"
             min={today}
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+        <div className="space-y-1.5">
+          <Label htmlFor="slot-time">
             Start time (slot ends {durationMinutes} min later)
-          </label>
-          <input
+          </Label>
+          <Input
+            id="slot-time"
             type="time"
             step="900"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-500"
           />
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={addSlot}
-        className="text-sm text-zinc-500 hover:text-zinc-900 border border-zinc-200 rounded-md px-4 py-2 hover:border-zinc-400 transition-colors"
-      >
+      <Button type="button" variant="outline" onClick={addSlot}>
         + Add this slot
-      </button>
+      </Button>
 
       {slots.length > 0 && (
         <div>
@@ -129,12 +128,14 @@ export default function AvailabilityGrid({
                   <p className="text-sm text-zinc-900">{formatDateTime(slot.start)}</p>
                   <p className="text-xs text-zinc-400">→ {formatDateTime(slot.end)}</p>
                 </div>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => removeSlot(slot.start)}
-                  className="text-xs text-zinc-300 hover:text-red-400 transition-colors"
+                  className="text-xs h-7 text-zinc-300 hover:text-red-500 hover:bg-red-50"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -143,15 +144,15 @@ export default function AvailabilityGrid({
 
       <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
         <p className="text-xs text-zinc-400">
-          {saved ? "Availability saved." : slots.length === 0 ? "No slots added yet." : `${slots.length} slot${slots.length !== 1 ? "s" : ""} pending save.`}
+          {saved
+            ? "Availability saved."
+            : slots.length === 0
+            ? "No slots added yet."
+            : `${slots.length} slot${slots.length !== 1 ? "s" : ""} pending save.`}
         </p>
-        <button
-          onClick={handleSave}
-          disabled={isPending || slots.length === 0}
-          className="px-5 py-2 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-40"
-        >
+        <Button onClick={handleSave} disabled={isPending || slots.length === 0}>
           {isPending ? "Saving..." : "Save availability"}
-        </button>
+        </Button>
       </div>
     </div>
   );

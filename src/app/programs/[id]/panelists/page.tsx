@@ -6,10 +6,21 @@ import Link from "next/link";
 import InvitePanelistForm from "./InvitePanelistForm";
 import { deletePanelist } from "@/actions/panelists";
 import CopyButton from "./CopyButton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-function formatSlots(slots: unknown): string {
-  if (!Array.isArray(slots)) return "0 slots";
-  return `${slots.length} slot${slots.length !== 1 ? "s" : ""}`;
+function formatSlots(slots: unknown): number {
+  if (!Array.isArray(slots)) return 0;
+  return slots.length;
 }
 
 export default async function PanelistsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,10 +49,10 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Link href={`/programs/${id}`} className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors">
-          ← {program.name}
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-3">Panelists</h1>
+        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
+          <Link href={`/programs/${id}`}>← {program.name}</Link>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Panelists</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Invite panelists to a round. They receive a private link to submit their availability — no account needed.
         </p>
@@ -53,10 +64,12 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
         </div>
       ) : (
         <>
-          <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-8">
-            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-4">Invite panelist</p>
-            <InvitePanelistForm programId={program.id} rounds={program.rounds} />
-          </div>
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-4">Invite panelist</p>
+              <InvitePanelistForm programId={program.id} rounds={program.rounds} />
+            </CardContent>
+          </Card>
 
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-3">
@@ -68,47 +81,56 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
                 No panelists invited yet.
               </div>
             ) : (
-              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-100">
-                      <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Name / Email</th>
-                      <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Round</th>
-                      <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Availability</th>
-                      <th className="text-left px-5 py-3 text-xs font-medium text-zinc-400">Magic link</th>
-                      <th className="px-5 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name / Email</TableHead>
+                      <TableHead>Round</TableHead>
+                      <TableHead>Availability</TableHead>
+                      <TableHead>Magic link</TableHead>
+                      <TableHead className="w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {program.panelists.map((p) => {
                       const magicLink = `${baseUrl}/availability/${p.magicLinkToken}`;
+                      const slotCount = formatSlots(p.availableSlots);
                       return (
-                        <tr key={p.id} className="border-b border-zinc-50 last:border-0">
-                          <td className="px-5 py-3">
+                        <TableRow key={p.id}>
+                          <TableCell>
                             <p className="font-medium text-zinc-900">{p.externalName || "—"}</p>
                             <p className="text-xs text-zinc-400">{p.externalEmail}</p>
-                          </td>
-                          <td className="px-5 py-3 text-zinc-600">{p.round.name}</td>
-                          <td className="px-5 py-3 text-zinc-600">{formatSlots(p.availableSlots)}</td>
-                          <td className="px-5 py-3">
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{p.round.name}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={slotCount > 0 ? "default" : "outline"}>
+                              {slotCount} {slotCount === 1 ? "slot" : "slots"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
                             <CopyButton value={magicLink} />
-                          </td>
-                          <td className="px-5 py-3">
+                          </TableCell>
+                          <TableCell>
                             <form action={deletePanelist.bind(null, p.id, program.id)}>
-                              <button
+                              <Button
                                 type="submit"
-                                className="text-xs text-zinc-300 hover:text-red-400 transition-colors"
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-7 text-zinc-300 hover:text-red-500 hover:bg-red-50"
                               >
                                 Remove
-                              </button>
+                              </Button>
                             </form>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </Card>
             )}
           </div>
         </>
@@ -116,4 +138,3 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
-

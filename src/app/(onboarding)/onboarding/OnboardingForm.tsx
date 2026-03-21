@@ -2,17 +2,17 @@
 
 import { useFormStatus } from "react-dom";
 import { createOrganization } from "@/actions/onboarding";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full py-2 px-4 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
+    <Button type="submit" disabled={pending} className="w-full">
       {pending ? "Setting up..." : "Continue"}
-    </button>
+    </Button>
   );
 }
 
@@ -27,28 +27,27 @@ export default function OnboardingForm({ userName }: { userName: string }) {
           <p className="text-sm text-zinc-400 mt-1">Set up your organization to get started</p>
         </div>
 
-        <div className="bg-white border border-zinc-200 rounded-xl p-8">
-          <form action={createOrganization} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-xs font-medium text-zinc-600 mb-1.5">
-                Organization name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                autoFocus
-                placeholder="Acme Corp"
-                className="w-full px-3 py-2 text-sm bg-white border border-zinc-300 rounded-md placeholder:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
-              />
-              <p className="text-[11px] text-zinc-400 mt-1.5">
-                This is how your workspace will be identified.
-              </p>
-            </div>
-            <SubmitButton />
-          </form>
-        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <form action={createOrganization} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Organization name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Acme Corp"
+                />
+                <p className="text-[11px] text-zinc-400">
+                  This is how your workspace will be identified.
+                </p>
+              </div>
+              <SubmitButton />
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

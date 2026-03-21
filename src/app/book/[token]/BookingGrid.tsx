@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { confirmBooking } from "@/actions/candidates";
+import { Button } from "@/components/ui/button";
 
 type SlotEntry = { start: string; end: string };
 type AvailableSlot = { panelistId: number; slot: SlotEntry };
@@ -91,13 +92,9 @@ export default function BookingGrid({
         <p className="text-xs text-zinc-400">
           {selected ? `Selected: ${formatDateTime(selected.slot.start)}` : "No slot selected"}
         </p>
-        <button
-          onClick={handleConfirm}
-          disabled={!selected || isPending}
-          className="px-5 py-2 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-40"
-        >
+        <Button onClick={handleConfirm} disabled={!selected || isPending}>
           {isPending ? "Booking..." : "Confirm booking"}
-        </button>
+        </Button>
       </div>
     </div>
   );

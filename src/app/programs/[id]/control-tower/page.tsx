@@ -3,13 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
-function healthLabel(supply: number, demand: number) {
-  if (demand === 0) return { label: "No demand", color: "text-zinc-400" };
+type HealthResult = { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className?: string };
+
+function healthLabel(supply: number, demand: number): HealthResult {
+  if (demand === 0) return { label: "No demand", variant: "secondary" };
   const delta = supply - demand;
-  if (delta < 0) return { label: "Deficit", color: "text-red-500" };
-  if (delta < 2) return { label: "Tight", color: "text-amber-500" };
-  return { label: "Healthy", color: "text-green-600" };
+  if (delta < 0) return { label: "Deficit", variant: "destructive" };
+  if (delta < 2) return { label: "Tight", variant: "outline", className: "border-amber-300 text-amber-600" };
+  return { label: "Healthy", variant: "outline", className: "border-green-300 text-green-600" };
 }
 
 export default async function ControlTowerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,10 +45,10 @@ export default async function ControlTowerPage({ params }: { params: Promise<{ i
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <Link href={`/programs/${id}`} className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors">
-          ← {program.name}
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-3">Control Tower</h1>
+        <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-zinc-700 -ml-2 mb-1">
+          <Link href={`/programs/${id}`}>← {program.name}</Link>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mt-1">Control Tower</h1>
         <p className="text-sm text-zinc-400 mt-1">Supply vs. demand health per round.</p>
       </div>
 
@@ -63,41 +69,49 @@ export default async function ControlTowerPage({ params }: { params: Promise<{ i
             const health = healthLabel(supply, demand);
 
             return (
-              <div key={round.id} className="bg-white border border-zinc-200 rounded-xl p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="text-sm font-semibold text-zinc-900">{round.name}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">Round {round.roundNumber} · {round.durationMinutes} min</p>
-                  </div>
-                  <span className={`text-sm font-semibold ${health.color}`}>{health.label}</span>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4">
-                  {[
-                    { label: "Panelists", value: round.panelists.length },
-                    { label: "Available slots", value: supply },
-                    { label: "Active candidates", value: demand },
-                    { label: "Confirmed bookings", value: booked },
-                  ].map((s) => (
-                    <div key={s.label}>
-                      <p className="text-xl font-semibold tabular-nums text-zinc-900">{s.value}</p>
-                      <p className="text-xs text-zinc-400 mt-0.5">{s.label}</p>
+              <Card key={round.id}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900">{round.name}</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        Round {round.roundNumber} · {round.durationMinutes} min
+                      </p>
                     </div>
-                  ))}
-                </div>
-
-                {supply < demand && (
-                  <div className="mt-4 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg">
-                    <p className="text-xs text-red-600">
-                      {demand - supply} candidate{demand - supply !== 1 ? "s" : ""} without available slots.{" "}
-                      <Link href={`/programs/${id}/panelists`} className="underline underline-offset-2">
-                        Invite more panelists
-                      </Link>{" "}
-                      or ask existing ones to add slots.
-                    </p>
+                    <Badge variant={health.variant} className={health.className}>
+                      {health.label}
+                    </Badge>
                   </div>
-                )}
-              </div>
+
+                  <Separator className="mb-4" />
+
+                  <div className="grid grid-cols-4 gap-4">
+                    {[
+                      { label: "Panelists", value: round.panelists.length },
+                      { label: "Available slots", value: supply },
+                      { label: "Active candidates", value: demand },
+                      { label: "Confirmed bookings", value: booked },
+                    ].map((s) => (
+                      <div key={s.label}>
+                        <p className="text-xl font-semibold tabular-nums text-zinc-900">{s.value}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {supply < demand && (
+                    <div className="mt-4 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg">
+                      <p className="text-xs text-red-600">
+                        {demand - supply} candidate{demand - supply !== 1 ? "s" : ""} without available slots.{" "}
+                        <Link href={`/programs/${id}/panelists`} className="underline underline-offset-2">
+                          Invite more panelists
+                        </Link>{" "}
+                        or ask existing ones to add slots.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
         </div>
