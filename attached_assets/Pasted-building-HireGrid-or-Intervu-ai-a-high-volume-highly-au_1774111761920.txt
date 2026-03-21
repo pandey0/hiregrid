@@ -1,0 +1,84 @@
+building HireGrid (or Intervu.ai), a high-volume, highly automated Applicant Tracking System (ATS) and Interview Scheduling platform.
+
+But unlike standard ATS platforms (like Lever or Greenhouse) that just move cards across a Kanban board, you are building a Supply Chain Engine for Hiring.
+
+Here is the complete, detailed breakdown of the system architecture, the user journeys, and the core philosophies we’ve coded into the platform.
+
+🏛️ The Core Philosophy: Supply Meets Demand
+The entire platform revolves around balancing two sides of a marketplace:
+
+Supply (Interviewers/Panelists): Time slots provided by human engineers/managers to conduct interviews.
+
+Demand (Candidates): Applicants who have passed initial screening and need to be interviewed for specific rounds.
+
+The system’s primary job is to ensure you never have a "Capacity Deficit" (e.g., 50 candidates waiting for Round 1, but only 10 interview slots available).
+
+🧩 The 3 Main Pillars of the Platform
+1. The "Headless" Panelist Engine (Supply)
+This is your platform's superpower. External interviewers (or busy internal engineers) do not need to create accounts or log in.
+
+The Invite: A Recruiter adds a Panelist to a Program and assigns them to specific constraints (e.g., "Sarah can only take Round 1 and Round 2").
+
+The Magic Link: The system generates a highly secure, unique URL (/availability/[token]).
+
+The Scheduler: When Sarah clicks the link, she sees a beautiful, mobile-friendly interface.
+
+Smart Time Snapping: If Sarah's assigned round is 45 minutes, the UI forces her to add availability in 45-minute blocks. This prevents "phantom capacity" (e.g., offering a 30-minute block for a 45-minute interview, which is useless).
+
+Conflict Prevention: The UI actively blocks overlapping time slots.
+
+2. The Candidate Pipeline (Demand)
+We moved away from a messy Kanban board to a scalable, data-dense list view.
+
+The Inbox (Drafts): Candidates enter the system (via manual upload, CSV, or career page) as DRAFT. Here, an ATS AI scans their resume and gives them a Match Score (e.g., 85%).
+
+Bulk Processing: The Recruiter selects the top candidates and clicks "Shortlist & Invite".
+
+Dynamic States: The candidates are moved to ACTIVE status and assigned an activeRoundId (e.g., mapped to Round 1).
+
+Self-Scheduling: The system emails the candidate their own Magic Link (/book/[token]). The candidate clicks it and picks a time slot from the aggregated pool of Panelist availability.
+
+3. The Control Tower (The Recruiter Dashboard)
+This is the UI we just perfected. It gives the Recruiter total visibility and control over the hiring drive.
+
+Global Filters: The Recruiter can view the health of the entire program or drill down into a specific stage (e.g., "Show me the capacity for the System Design round").
+
+Health Badges: The system calculates Supply - Demand. If Demand outpaces Supply, the dashboard flashes red alerts notifying the recruiter of a bottleneck.
+
+Granular Table: Shows every interviewer, exactly how many usable slots they have provided, and a progress bar of their capacity.
+
+God Mode (Admin Sheet): If a panelist messages the recruiter saying, "I'm free tomorrow at 2 PM," the recruiter can click "Manage Time" and input the availability on the panelist's behalf.
+
+One-Click Reminders: A single button triggers a server action that emails a panelist their magic link again, nudging them to add more slots.
+
+🗄️ The Data Architecture (Prisma Schema Recap)
+We redesigned the database to be extremely robust:
+
+User & Organization: The B2B layer. Recruiters and Admins belong here.
+
+Program & Round: The configuration. A Program (e.g., "SDE-2 Hiring") has multiple Rounds. Rounds are fully dynamic (you can have 2 rounds or 10 rounds, with custom durations).
+
+ProgramPanelist: The crucial pivot table. It links a Panelist to a Program, stores their assignedRoundIds, their secure magicLink, and their raw availableSlots as JSON.
+
+Candidate: Stores the applicant data, their ATS score, their current activeRoundId, and their own bookingToken.
+
+🚀 The User Journey (How it all connects)
+Here is a day in the life of a hiring drive on your platform:
+
+Setup: Recruiter creates "Frontend Developer" Program and defines 2 Rounds: "React Coding" (60m) and "Culture Fit" (30m).
+
+Staffing: Recruiter goes to the Panelist Manager. They invite Alice (assigned to Coding) and Bob (assigned to Culture Fit).
+
+Supply Generation: Alice and Bob get their Magic Links. Alice adds 5 hours of availability. Bob adds 2 hours.
+
+Sourcing: 100 resumes are uploaded. The ATS scores them.
+
+Shortlisting: Recruiter goes to the Candidate Inbox, selects the 10 candidates with an ATS score > 80%, and bulk-moves them to "React Coding".
+
+Demand Spike: The Control Tower instantly updates. Demand for the Coding round is now 10. Supply (from Alice) is only 5 slots.
+
+Bottleneck Alert: The Control Tower flashes RED: "5 Slot Deficit".
+
+Resolution: Recruiter clicks the "Mail" icon next to Alice to remind her to add time, or invites a new engineer, Charlie, to help with the Coding round.
+
+Booking: Candidates receive their emails, click their links, and consume the slots provided by Alice and Charlie.
