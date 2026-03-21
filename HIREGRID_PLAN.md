@@ -1,138 +1,375 @@
-# HireGrid — Complete Build Plan
-> Last updated: March 2026 | Stack: Next.js 15 · Prisma · PostgreSQL · Better Auth · Tailwind CSS v4 · Resend · OpenAI
+# HireGrid — Complete Requirements & Bug Analysis
+> Deep audit conducted: March 2026 | Every file inspected, every route navigated, every log read.
 
 ---
 
-## 1. Vision
+## 🔴 PART 1 — WHAT IS ACTUALLY BROKEN RIGHT NOW (Live Bugs)
 
-HireGrid is a **Supply Chain Engine for Hiring** — not a Kanban ATS. It balances two sides of a marketplace:
+### BUG-01 · `/create-program` crashes the ENTIRE app [SEVERITY: CRITICAL]
 
-- **Supply** → Panelist/interviewer time slots
-- **Demand** → Candidates who need to be interviewed
+**Impact:** When Next.js tries to compile `/create-program`, it fails with 9 missing module errors. Because Next.js shares a single compilation context, this crashes ALL routes — including the landing page — producing `GET / 500` errors that are visible in the server logs right now.
 
-The system's primary goal is to surface and resolve capacity deficits before they create hiring bottlenecks.
+**Root cause:** The page was copied from a different project (Express + React Query + shared schema) and none of the dependencies or files exist here.
+
+Missing modules (confirmed from logs):
+```
+@tanstack/react-query        → not installed
+@hookform/resolvers/zod      → not installed
+react-hook-form              → not installed
+@/hooks/use-toast            → file does not exist
+@/components/ui/textarea     → file does not exist
+@/components/ui/form         → file does not exist
+@shared/schema               → package does not exist (was from a monorepo)
+@/components/ui/round-form-field → file does not exist
+@/services/authService       → file does not exist
+@/lib/queryClient            → file does not exist
+```
+
+**What user sees:** Page timeout. Landing page intermittently 500s. The sidebar "Create Program" link navigates the user to a broken page.
 
 ---
 
-## 2. Current State Audit
+### BUG-02 · Dashboard sidebar crashes on client [SEVERITY: CRITICAL]
 
-### ✅ Already Built
-| Area | Status | Notes |
+**File:** `src/components/PageComponents/sidebar.tsx` line 29
+
+```typescript
+const currentUser = auth.api.accountInfo;
+// auth.api is the Better Auth SERVER-SIDE handler object.
+// It is NOT a client data store. This is the wrong API entirely.
+
+const userName = currentUser.name || currentUser?.name || "";
+// currentUser is undefined → TypeError: Cannot read properties of undefined ('name')
+```
+
+**Consequence:** Any page using the `(dashboard)` layout will crash client-side with a TypeError. The dashboard "appears" to work only because Next.js App Router renders the server component (the page) first, and the sidebar error is silently swallowed in some cases.
+
+---
+
+### BUG-03 · Dashboard layout has a hardcoded throw [SEVERITY: HIGH]
+
+**File:** `src/app/(dashboard)/layout.tsx` line 29-31
+
+```typescript
+<Sidebar isMobileOpen={false} setMobileOpen={function (open: boolean): void {
+  throw new Error("Function not implemented.");  // ← this is live in production
+}} />
+```
+
+The `isMobileOpen` state is created (line 14) but never actually wired to the Sidebar. On mobile, clicking the hamburger menu will throw an uncaught Error.
+
+---
+
+### BUG-04 · Dashboard renders raw session object as text [SEVERITY: HIGH]
+
+**File:** `src/app/(dashboard)/dashboard/page.tsx` line 45
+
+```tsx
+<div>{JSON.stringify(session, null, 2)}</div>
+```
+
+This is debug code left in production. Session is `null` (no active session) so the dashboard shows the literal text **`; null`** underneath the program cards. Visible in the live screenshot.
+
+---
+
+### BUG-05 · Landing page intermittent 500 errors [SEVERITY: HIGH]
+
+**From logs (confirmed):**
+```
+⨯ SyntaxError: Unexpected end of JSON input  { page: '/' }
+GET / 500 in 1832ms
+```
+
+This appears 3+ times in the logs. Caused by Better Auth trying to parse malformed or empty JSON from the database connection on cold start, or by the `create-program` compilation failure polluting the module graph. Intermittent — sometimes 200, sometimes 500.
+
+---
+
+### BUG-06 · `BETTER_AUTH_SECRET` is not set [SEVERITY: HIGH]
+
+**From env audit:** The secret `BETTER_AUTH_SECRET` is not in the secrets. Better Auth uses this to sign JWTs/sessions. Without it, Better Auth either uses an insecure default or throws at runtime, making all login/signup operations unreliable or completely broken.
+
+---
+
+### BUG-07 · Onboarding form does absolutely nothing [SEVERITY: HIGH]
+
+**File:** `src/app/(onboarding)/onboarding/page.tsx`
+
+```typescript
+const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault()
+  // Add your form submission logic here   ← no logic, never was
+}
+```
+
+Clicking "Next" prevents default and... does nothing. No organization is created. No DB insert. No redirect. The user is stuck.
+
+---
+
+### BUG-08 · Sign-up has no post-registration redirect [SEVERITY: HIGH]
+
+**File:** `src/app/ui-components/pages/register.tsx`
+
+After `signUp.email()` succeeds (in `onResponse`), there is no `router.push('/onboarding')`. The user registers and stays on the register page with no feedback about what to do next.
+
+---
+
+### BUG-09 · No route protection — dashboard is publicly accessible [SEVERITY: HIGH]
+
+There is no `middleware.ts` file. Any unauthenticated user who navigates to `/dashboard` sees the full dashboard with mock data. Session is `null` but no redirect happens.
+
+---
+
+### BUG-10 · Sidebar navigation links point to non-existent routes [SEVERITY: MEDIUM]
+
+**File:** `src/components/PageComponents/sidebar.tsx`
+
+```typescript
+{ name: "Manage Panelists",    href: "/manage-panelists" },     // ❌ 404
+{ name: "Schedule Interviews", href: "/schedule-interviews" },  // ❌ 404
+{ name: "Profile",             href: "/profile" },              // ❌ 404
+```
+
+Clicking these shows Next.js 404 page.
+
+---
+
+### BUG-11 · Dashboard data is 100% hardcoded mock [SEVERITY: MEDIUM]
+
+**File:** `src/app/(dashboard)/dashboard/page.tsx`
+
+Programs, candidates, round counts — all are literal JavaScript arrays defined inline. The DB is never queried. A user who creates a real program via API would never see it here.
+
+---
+
+## 🟡 PART 2 — THE HIRING ROUNDS SYSTEM: What's Missing vs What's Needed
+
+The core value proposition is **dynamic multi-round hiring management**. Here is what's needed vs what exists.
+
+### The Dynamic Round Flow (Required)
+
+```
+Program: "Senior Frontend Engineer Hiring Drive"
+│
+├── Round 1: Resume Screening (ATS AI)
+│   ├── Duration: N/A (AI-automated, no human interview slot needed)
+│   ├── Panelists assigned: none
+│   └── Outcome: PASS → Round 2 | FAIL → REJECTED
+│
+├── Round 2: Technical Assessment (60 min)
+│   ├── Duration: 60 minutes  ← stored as durationMinutes (INT)
+│   ├── Panelists assigned: Alice, Charlie
+│   │   └── Each has a magic link to submit availability
+│   ├── Candidate gets /book/[token] link
+│   └── Outcome: PASS → Round 3 | FAIL → REJECTED
+│
+├── Round 3: System Design (90 min)
+│   ├── Duration: 90 minutes
+│   ├── Panelists assigned: Bob, Dave
+│   └── Same booking flow
+│
+└── Round 4: Culture Fit (30 min)
+    ├── Duration: 30 minutes
+    ├── Panelists: HR team
+    └── Final outcome
+```
+
+### Schema Gap Analysis (Round-by-Round)
+
+| Feature | Needed | Current State |
 |---|---|---|
-| Landing page | Done | Animated, polished dark UI with Framer Motion |
-| Auth library setup | Done | Better Auth + Prisma adapter configured |
-| Prisma schema (base) | Done | User, Org, Program, Round, Panelist, Applicant, Session, Account |
-| Sign-in / Sign-up pages | UI only | Better Auth not wired to forms yet |
-| Dashboard shell | Mock data | No real DB, session not used |
-| Sidebar | Broken | References `auth.api.accountInfo` (doesn't exist), hardcoded programs |
-| Onboarding page | Skeleton | Form present but no submit action, no org creation |
-| Create Program page | Broken | References non-existent `@shared/schema`, `authService`, `apiRequest` |
-
-### ❌ Not Built (Gaps)
-| Area | Priority |
-|---|---|
-| Schema: ProgramPanelist pivot (magic links, assigned rounds, slots JSON) | P0 |
-| Schema: Candidate model with ATS score + booking token | P0 |
-| Auth: Sign-in/Sign-up wired to Better Auth API | P0 |
-| Auth: Middleware route protection | P0 |
-| Onboarding: Create org + ADMIN membership on first login | P0 |
-| Program CRUD: Real DB-backed API routes | P0 |
-| Panelist Engine: Magic link generation + `/availability/[token]` flow | P0 |
-| Candidate Pipeline: CSV upload, individual add, ATS AI scoring | P1 |
-| Control Tower: Supply vs Demand health view per round | P1 |
-| Candidate self-booking: `/book/[token]` flow | P1 |
-| Email system: Transactional emails (invite, reminder, booking confirmation) | P1 |
-| Admin "God Mode": Recruiter inputs availability on panelist's behalf | P2 |
-| One-click reminder emails | P2 |
-| Feedback collection post-interview | P2 |
-| Analytics dashboard: Pass rates, avg score, round completion | P3 |
+| Round duration in minutes | `durationMinutes: Int` | `durationHours: Int` — precision wrong, can't do 45-min or 90-min rounds |
+| Round order | `roundNumber: Int` | ✅ Exists but not enforced |
+| Round type (AI / Human) | `roundType: RoundType` enum | ❌ Missing |
+| Panelist-to-Round assignment | `ProgramPanelist` pivot with `assignedRoundIds` | ❌ Entire table missing |
+| Panelist magic link token | `ProgramPanelist.magicLinkToken: String @unique` | ❌ Missing |
+| Panelist external (no account) support | `ProgramPanelist.externalEmail`, `.externalName` | ❌ Missing |
+| Panelist time slots (JSON) | `ProgramPanelist.availableSlots: Json` | ❌ Missing |
+| Candidate with ATS score | `Candidate.atsScore: Float`, `.atsReason: String` | ❌ Missing — only thin `Applicant` exists |
+| Candidate resume URL | `Candidate.resumeUrl: String` | ❌ Missing |
+| Candidate active round tracking | `Candidate.activeRoundId: Int` | ❌ Missing |
+| Candidate booking token | `Candidate.bookingToken: String @unique` | ❌ Missing |
+| Candidate booking token expiry | `Candidate.bookingTokenExp: DateTime` | ❌ Missing |
+| Candidate status granularity | DRAFT/SHORTLISTED/ACTIVE/BOOKED/COMPLETED | Only PENDING/SELECTED/REJECTED |
+| Confirmed booking record | `Booking` model | ❌ Entire model missing |
+| Booking status | SCHEDULED/COMPLETED/CANCELLED/NO_SHOW | ❌ Missing |
+| Post-interview feedback on booking | `Booking.feedback`, `.score` | ❌ Missing |
 
 ---
 
-## 3. Enhanced Tech Choices
+## 🟠 PART 3 — WHAT'S BUILT BUT WORKS (Salvageable)
 
-| Concern | Current | Enhanced Choice | Reason |
-|---|---|---|---|
-| Emails | None | **Resend** | Modern, great DX, Next.js-native, free tier generous |
-| AI Resume Scoring | None | **OpenAI GPT-4o** (structured outputs) | JSON mode for deterministic score + reason |
-| File Upload | None | **UploadThing** | Native Next.js App Router support, S3-backed, type-safe |
-| Data fetching | None wired | **TanStack Query v5** (already in deps on create-program page) | Optimistic updates, cache invalidation |
-| Forms | Referenced but broken | **React Hook Form + Zod** (already partially present) | Type-safe, server action compatible |
-| Server mutations | REST pattern (broken) | **Next.js Server Actions** | Eliminates boilerplate API routes for mutations |
-| Scheduling UI | None | **react-big-calendar** or custom grid | Visual time block picker for availability |
-| Tokens | None | **crypto.randomBytes** (Node built-in) | Secure, unguessable magic link tokens |
-| Rate limiting | None | **Upstash Redis + Ratelimit** | Protect magic link endpoints from abuse |
-| Observability | None | **Sentry** | Error tracking, session replays |
+| Feature | Status | Quality |
+|---|---|---|
+| Landing page | ✅ Loads (mostly) | Good — polished dark UI |
+| Sign-in page UI | ✅ Renders | Good — calls Better Auth correctly |
+| Sign-up page UI | ✅ Renders | Good — calls Better Auth correctly |
+| Better Auth setup (`/api/auth/[...all]`) | ✅ Wired | Correct handler |
+| Prisma schema (base) | ✅ Partial | User, Org, Round, Program exist — needs 3 new models |
+| Prisma client generation | ✅ Works | Runs on `npm run dev` |
+| Sidebar navigation structure | ✅ UI only | Links, icons — just broken targets |
+| Dashboard layout shell | ✅ Renders | Layout OK — sidebar crash is client-side |
+| Dashboard stats cards | ✅ Renders | Mock data only |
+| Onboarding form UI | ✅ Renders | Form renders — submit is dead |
+| Framer Motion animations | ✅ | Good quality throughout |
 
 ---
 
-## 4. Revised Prisma Schema (Target)
+## 🔵 PART 4 — COMPLETE FEATURE INVENTORY
 
-> Current schema needs these additions and changes:
+### Features Fully Missing (never started)
+
+| Feature | Complexity | Blocks What |
+|---|---|---|
+| `middleware.ts` route protection | Low | Everything in dashboard |
+| `BETTER_AUTH_SECRET` env var | Trivial | All auth |
+| Onboarding → create Org + ADMIN member | Low | Everything else |
+| `/programs/create` — real Server Action | Medium | Creating programs |
+| `/programs/[id]` — program detail | Medium | Round management |
+| **Panelist Invite** — generate magic link, send email | High | Supply side |
+| **`/availability/[token]`** — headless scheduler UI | High | Supply side |
+| Smart slot snapping (force slot = round duration) | Medium | Capacity accuracy |
+| Slot conflict detection | Medium | Capacity accuracy |
+| "God Mode" — recruiter manages panelist slots | Medium | Bottleneck resolution |
+| One-click reminder email | Low | Panelist nudge |
+| Resume / CSV upload | Medium | Demand side |
+| AI ATS scoring (OpenAI) | Medium | Candidate shortlisting |
+| Candidate Inbox (data-dense list view) | Medium | Demand side |
+| Bulk shortlist action | Medium | Demand side |
+| **`/book/[token]`** — candidate self-booking | High | Demand ↔ Supply match |
+| **Control Tower** — Supply vs Demand health view | High | Recruiter visibility |
+| Health badges (🔴🟡🟢) per round | Medium | Bottleneck alerts |
+| Post-interview feedback | Medium | Round progression |
+| Candidate round promotion | Low | Multi-round support |
+| Analytics/funnel view | Medium | Insights |
+| Profile/settings page | Low | UX completeness |
+
+---
+
+## 🟢 PART 5 — CORRECTED PRISMA SCHEMA (Target State)
 
 ```prisma
-// ─── ADDITIONS TO EXISTING SCHEMA ───────────────────────────────────────────
+// ─── CHANGES TO EXISTING MODELS ──────────────────────────────────────────────
 
-// ProgramPanelist: Pivot table linking a panelist to a specific program
+// Round: rename durationHours → durationMinutes, add roundType
+model Round {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String?
+  roundNumber     Int           // 1-indexed ordering within program
+  durationMinutes Int           // was durationHours — supports 30/45/60/90 min
+  roundType       RoundType     @default(HUMAN_INTERVIEW)
+  programId       Int
+  program         Program       @relation(fields: [programId], references: [id])
+  panelists       ProgramPanelist[]
+  bookings        Booking[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum RoundType {
+  ATS_SCREENING    // automated, no panelist needed
+  HUMAN_INTERVIEW  // requires panelist slots
+  ASSIGNMENT       // async task submission
+}
+
+// ─── NEW MODELS ───────────────────────────────────────────────────────────────
+
+// ProgramPanelist: Headless panelist engine — THE core supply table
 model ProgramPanelist {
   id               Int       @id @default(autoincrement())
   programId        Int
   program          Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
-  userId           String    // the panelist's user ID (or null for external)
-  externalEmail    String?   // for headless (no-account) panelists
+  roundId          Int       // which specific round this panelist covers
+  round            Round     @relation(fields: [roundId], references: [id])
+
+  // Panelist identity — can be internal (userId) or external (email only)
+  userId           String?   // null for external/headless panelists
+  user             User?     @relation(fields: [userId], references: [id])
+  externalEmail    String?   // required if userId is null
   externalName     String?
-  assignedRoundIds Int[]     // which rounds this panelist covers
-  magicLinkToken   String    @unique
-  magicLinkUsed    Boolean   @default(false)
-  availableSlots   Json      @default("[]")  // [{start: ISO, end: ISO, booked: bool}]
+
+  // Magic link system
+  magicLinkToken   String    @unique  // crypto.randomBytes(32).toString('hex')
+  magicLinkUsedAt  DateTime?          // null = never used
+
+  // Availability (JSON array of time blocks)
+  // Structure: [{start: ISO8601, end: ISO8601, booked: boolean, bookingId?: Int}]
+  availableSlots   Json      @default("[]")
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  bookings         Booking[]
+
+  @@unique([programId, roundId, externalEmail])  // prevent duplicate invites
 }
 
-// Candidate: Full applicant model replacing the thin Applicant model
+// Candidate: Full applicant model (replaces thin Applicant)
 model Candidate {
   id              Int              @id @default(autoincrement())
   programId       Int
   program         Program          @relation(fields: [programId], references: [id])
   organizationId  Int
+
+  // Identity — candidates are NOT required to have a User account
   name            String
   email           String
-  resumeUrl       String?          // S3 URL from UploadThing
-  atsScore        Float?           // 0-100, set by AI
-  atsReason       String?          // AI explanation
+  resumeUrl       String?          // S3/UploadThing URL
+
+  // ATS AI scoring (set after resume upload)
+  atsScore        Float?           // 0-100
+  atsReason       String?          // AI explanation text
+
+  // Pipeline state
   status          CandidateStatus  @default(DRAFT)
   activeRoundId   Int?             // which round they are currently in
+  activeRound     Round?           @relation(fields: [activeRoundId], references: [id])
+
+  // Self-booking token for /book/[token] page
   bookingToken    String?          @unique
   bookingTokenExp DateTime?
-  bookingRoundId  Int?             // round for which booking is pending
+  bookingRoundId  Int?             // which round this booking token is for
+
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+
+  bookings        Booking[]
+
+  @@unique([programId, email])     // one candidate per program per email
 }
 
 enum CandidateStatus {
-  DRAFT        // just uploaded, not yet reviewed
-  SHORTLISTED  // recruiter moved them in
-  ACTIVE       // assigned to a round, pending booking
-  BOOKED       // has a confirmed interview slot
-  COMPLETED    // all rounds done
-  REJECTED
+  DRAFT        // uploaded, not reviewed
+  SHORTLISTED  // recruiter manually approved
+  ACTIVE       // assigned to a round, booking token sent
+  BOOKED       // confirmed slot exists
+  COMPLETED    // all rounds finished
+  REJECTED     // eliminated at any stage
 }
 
-// Booking: Confirmed interview slot between candidate and panelist
+// Booking: Confirmed interview record
 model Booking {
-  id               Int              @id @default(autoincrement())
-  candidateId      Int
-  candidate        Candidate        @relation(fields: [candidateId], references: [id])
+  id                Int              @id @default(autoincrement())
+  candidateId       Int
+  candidate         Candidate        @relation(fields: [candidateId], references: [id])
   programPanelistId Int
-  programPanelist  ProgramPanelist  @relation(fields: [programPanelistId], references: [id])
-  roundId          Int
-  round            Round            @relation(fields: [roundId], references: [id])
-  slotStart        DateTime
-  slotEnd          DateTime
-  status           BookingStatus    @default(SCHEDULED)
-  feedback         String?
-  score            Float?
-  createdAt        DateTime         @default(now())
+  programPanelist   ProgramPanelist  @relation(fields: [programPanelistId], references: [id])
+  roundId           Int
+  round             Round            @relation(fields: [roundId], references: [id])
+
+  // Slot details (denormalized for display without parsing availableSlots JSON)
+  slotStart         DateTime
+  slotEnd           DateTime
+
+  status            BookingStatus    @default(SCHEDULED)
+
+  // Post-interview feedback
+  score             Float?           // panelist's numeric score
+  verdict           Verdict?         // PASS / FAIL / HOLD
+  feedback          String?          // free text notes
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 enum BookingStatus {
@@ -142,381 +379,205 @@ enum BookingStatus {
   NO_SHOW
 }
 
-// Add to Program model:
-//   panelists    ProgramPanelist[]
-//   candidates   Candidate[]
-//   bookings     Booking[]          (via rounds/panelists)
-
-// Add to Round model:
-//   durationMinutes Int  (rename durationHours → durationMinutes for precision)
-//   bookings        Booking[]
+enum Verdict {
+  PASS
+  FAIL
+  HOLD
+}
 ```
 
 ---
 
-## 5. Route Map (Complete)
+## 🟣 PART 6 — FIX ORDER (Strict Build Sequence)
 
-```
-/                              → Landing page ✅
-/sign-in                       → Better Auth sign-in ✅ (needs wiring)
-/sign-up                       → Better Auth sign-up ✅ (needs wiring)
-/onboarding                    → Create org, become ADMIN ⚠️ (skeleton)
+### Step 1 — Immediate crash fixes (do first, today)
 
-── Protected (requires session + org) ──────────────────────────────────────
-/dashboard                     → Overview: programs, quick stats ⚠️ (mock)
-/dashboard/[programId]         → Control Tower for specific program ❌
-/programs/create               → Create program + rounds ⚠️ (broken)
-/programs/[id]                 → Program detail + round config ❌
-/programs/[id]/panelists       → Panelist Manager ❌
-/programs/[id]/candidates      → Candidate Inbox + pipeline ❌
-/programs/[id]/control-tower   → Supply/Demand health view ❌
-/profile                       → User settings ❌
+These are blocking everything:
 
-── Magic Link flows (no auth required) ──────────────────────────────────────
-/availability/[token]          → Panelist availability scheduler ❌
-/book/[token]                  → Candidate self-booking ❌
+- [ ] **1a** Delete or rewrite `create-program/page.tsx` (9 broken imports crash the app)
+- [ ] **1b** Set `BETTER_AUTH_SECRET` in Replit Secrets
+- [ ] **1c** Fix sidebar — replace `auth.api.accountInfo` with a prop/context pattern
+- [ ] **1d** Fix dashboard layout — wire `isMobileOpen` state properly to Sidebar
+- [ ] **1e** Remove `{JSON.stringify(session, null, 2)}` debug line from dashboard page
+- [ ] **1f** Install missing packages: `react-hook-form @hookform/resolvers @tanstack/react-query`
 
-── API Routes ───────────────────────────────────────────────────────────────
-/api/auth/[...all]             → Better Auth handler ✅
-/api/programs                  → GET list, POST create ❌
-/api/programs/[id]             → GET, PATCH, DELETE ❌
-/api/programs/[id]/panelists   → GET, POST invite panelist ❌
-/api/programs/[id]/candidates  → GET, POST add/upload candidates ❌
-/api/programs/[id]/shortlist   → POST bulk shortlist ❌
-/api/candidates/[id]/score     → POST trigger AI scoring ❌
-/api/availability/[token]      → GET token info, POST save slots ❌
-/api/book/[token]              → GET available slots, POST confirm booking ❌
-/api/reminders/panelist/[id]   → POST resend magic link email ❌
-/api/upload                    → UploadThing endpoint ❌
-/api/webhooks/email            → Optional: Resend delivery webhooks ❌
-```
+### Step 2 — Auth & Onboarding (unlock the user journey)
 
----
+- [ ] **2a** Add `middleware.ts` protecting all `/dashboard` routes → redirect to `/sign-in`
+- [ ] **2b** Onboarding form: wire submit → create `Organization` + `OrganizationMember (ADMIN)` → redirect `/dashboard`
+- [ ] **2c** Register page: on success → redirect to `/onboarding`
+- [ ] **2d** Login page: on success → check if org exists → redirect to `/dashboard` or `/onboarding`
 
-## 6. Build Phases
+### Step 3 — Schema & DB migration
 
-### Phase 0 — Foundation Fix (unblock everything)
-> Goal: Auth works end-to-end, DB is correct, app doesn't crash.
+- [ ] **3a** Rename `Round.durationHours` → `Round.durationMinutes`, add `roundType`
+- [ ] **3b** Add `ProgramPanelist` model
+- [ ] **3c** Add `Candidate` model (replaces `Applicant`)
+- [ ] **3d** Add `Booking` model
+- [ ] **3e** Run `prisma migrate dev`
 
-- [ ] **0.1** Fix Prisma schema — add `ProgramPanelist`, `Candidate`, `Booking` models
-- [ ] **0.2** Run `prisma migrate dev` to apply schema
-- [ ] **0.3** Wire Better Auth to sign-in / sign-up forms (email + password)
-- [ ] **0.4** Add Next.js middleware (`middleware.ts`) to protect `/dashboard` and below
-- [ ] **0.5** Fix sidebar — remove broken `auth.api.accountInfo` call, use server component session
-- [ ] **0.6** Fix create-program page — remove broken imports, rewrite with Server Actions
-- [ ] **0.7** Onboarding flow — on submit: create `Organization`, create `OrganizationMember` (ADMIN role), redirect to dashboard
+### Step 4 — Program & Round CRUD (first real feature)
 
-**Acceptance**: User can sign up → onboard → see a real (empty) dashboard.
+- [ ] **4a** Replace broken create-program page with Server Action-based form
+- [ ] **4b** `GET /dashboard` — query real programs from DB for this org
+- [ ] **4c** Program detail page `/programs/[id]` — show rounds list, edit rounds
 
----
+### Step 5 — Panelist Engine (Supply side)
 
-### Phase 1 — Program & Round Management
-> Goal: Recruiter can create and configure programs.
+- [ ] **5a** Panelist invite form → generates `magicLinkToken`, saves `ProgramPanelist`, sends email (Resend)
+- [ ] **5b** `/availability/[token]` — public page:
+  - Validate token
+  - Show time slot grid
+  - Smart snapping: slots must be multiples of `round.durationMinutes`
+  - Client-side conflict detection
+  - Save to `ProgramPanelist.availableSlots` JSON
+- [ ] **5c** Panelist Manager page — table view, slot counts, remind button, God Mode editor
 
-- [ ] **1.1** `POST /api/programs` Server Action — create program + rounds in one transaction
-- [ ] **1.2** `GET /api/programs` — list org's programs with round count + candidate count
-- [ ] **1.3** `/dashboard` — real data from DB, stats cards linked to real counts
-- [ ] **1.4** `/programs/[id]` — program detail page with round list and edit capability
-- [ ] **1.5** Round editor — add/remove/reorder rounds, set name + duration (in minutes)
+### Step 6 — Candidate Pipeline (Demand side)
 
-**Acceptance**: Recruiter creates "Frontend Hiring" with 2 rounds, sees it on dashboard.
+- [ ] **6a** Install UploadThing, add resume upload endpoint
+- [ ] **6b** Manual add + CSV bulk upload → create `Candidate` records as DRAFT
+- [ ] **6c** AI scoring: extract PDF text → GPT-4o structured output → save `atsScore`, `atsReason`
+- [ ] **6d** Candidate Inbox — list view, ATS score badge, status filter, bulk select
+- [ ] **6e** "Shortlist & Invite" bulk action → set ACTIVE, assign `activeRoundId`, generate `bookingToken`, send email
 
----
+### Step 7 — Candidate Booking (Supply ↔ Demand)
 
-### Phase 2 — The Panelist Engine (Supply)
-> Goal: Headless panelist system working end-to-end.
-
-- [ ] **2.1** Panelist invite form — enter email + name + assign rounds → generates `magicLinkToken`
-- [ ] **2.2** Store `ProgramPanelist` row in DB
-- [ ] **2.3** Integrate **Resend** — send invite email with `/availability/[token]` link
-- [ ] **2.4** `/availability/[token]` — public page, no auth required
-  - Validate token, show program + round info
-  - Time slot grid UI (custom or react-big-calendar)
-  - **Smart Snapping**: force slot duration = round's `durationMinutes`
-  - **Conflict detection**: block overlapping selections client-side
-  - On save → `POST /api/availability/[token]` → store JSON in `ProgramPanelist.availableSlots`
-- [ ] **2.5** Panelist Manager page `/programs/[id]/panelists`
-  - Table: panelist name, email, assigned rounds, slot count, last active
-  - Progress bar: slots provided vs slots needed
-  - "Remind" button → resend magic link email
-  - "Manage Time" (God Mode) → recruiter opens availability UI on panelist's behalf
-
-**Acceptance**: Recruiter invites Alice → Alice gets email → opens link → adds 5 × 60min slots → recruiter sees 5 slots in panelist table.
-
----
-
-### Phase 3 — Candidate Pipeline (Demand)
-> Goal: Candidates enter the system, get scored, get shortlisted.
-
-- [ ] **3.1** Integrate **UploadThing** — resume upload endpoint (PDF/DOCX)
-- [ ] **3.2** Manual add candidate form (name + email + optional resume)
-- [ ] **3.3** CSV bulk upload — parse CSV, validate rows, insert candidates as DRAFT
-- [ ] **3.4** **AI Resume Scoring** via OpenAI GPT-4o structured output
-  - Extract text from uploaded PDF/DOCX (use `pdf-parse` or `mammoth`)
-  - Prompt: score 0-100 vs program description + round requirements
-  - Store `atsScore` + `atsReason` on `Candidate`
-  - Run as background Server Action (non-blocking)
-- [ ] **3.5** Candidate Inbox (`/programs/[id]/candidates`)
-  - Data-dense list view (NOT kanban)
-  - Columns: Name, Email, ATS Score badge, Status, Actions
-  - Filters: by status, by score range
-  - Sort: by score desc (default)
-  - Bulk select → "Shortlist & Invite" button
-- [ ] **3.6** Shortlist action → set status to ACTIVE, assign `activeRoundId`, generate `bookingToken`, send booking email via Resend
-
-**Acceptance**: Upload 10 resumes → all get scored → top 3 are shortlisted → 3 emails sent.
-
----
-
-### Phase 4 — Candidate Self-Booking (Demand ↔ Supply)
-> Goal: Candidates consume panelist time slots.
-
-- [ ] **4.1** `/book/[token]` — public page, no auth required
+- [ ] **7a** `/book/[token]` — public page:
   - Validate token + expiry
-  - Show program name, round info, candidate name
-  - Fetch available (unbooked) slots for the candidate's `activeRoundId`
-  - Slot picker UI — list of times, click to select
-  - On confirm → `POST /api/book/[token]`
-    - Mark slot as booked in `ProgramPanelist.availableSlots`
-    - Create `Booking` record
-    - Update `Candidate.status` to BOOKED
-    - Send confirmation emails to candidate AND panelist via Resend
-- [ ] **4.2** Handle edge case: slot already taken (optimistic lock, redirect to re-pick)
-- [ ] **4.3** Booking confirmation page — shows date/time, panelist name, calendar invite (.ics download)
+  - Fetch unbooked slots for `bookingRoundId`
+  - Slot picker UI
+  - Confirm → create `Booking`, mark slot booked, update candidate status, send confirmation emails
+- [ ] **7b** Handle race condition (two candidates pick same slot simultaneously)
+- [ ] **7c** Booking confirmation page with .ics download
 
-**Acceptance**: Candidate clicks link → picks a slot → slot disappears from pool → both parties get confirmation email.
+### Step 8 — Control Tower
 
----
+- [ ] **8a** Per-round health calculation:
+  ```
+  supply = count of unbooked slots across all ProgramPanelists for this round
+  demand = count of Candidates where activeRoundId = this round AND status = ACTIVE
+  delta  = supply - demand
+  ```
+- [ ] **8b** Health badge component: 🔴 deficit / 🟡 close / 🟢 surplus
+- [ ] **8c** Panelist capacity table per round
+- [ ] **8d** One-click reminder (resend magic link email)
+- [ ] **8e** God Mode — recruiter opens availability editor for a panelist
 
-### Phase 5 — Control Tower (The Recruiter HQ)
-> Goal: Full visibility, bottleneck detection, one-click interventions.
+### Step 9 — Feedback & Round Progression
 
-- [ ] **5.1** `/programs/[id]/control-tower` (or embed in program page)
-- [ ] **5.2** Global program health card:
-  - Total supply (all unbooked slots across all rounds)
-  - Total demand (all ACTIVE candidates per round)
-  - Net health = Supply - Demand per round
-- [ ] **5.3** Per-round health badges:
-  - 🟢 Green: surplus slots
-  - 🟡 Yellow: within 20% of deficit
-  - 🔴 Red: deficit — "X slots needed"
-- [ ] **5.4** Panelist capacity table per round:
-  - Panelist name, slots provided, slots booked, slots remaining, progress bar
-  - "Mail" icon → trigger reminder email
-  - "Manage Time" icon → God Mode availability editor
-- [ ] **5.5** Candidate status breakdown per round:
-  - ACTIVE (waiting to book) vs BOOKED vs COMPLETED
-- [ ] **5.6** Real-time updates via Next.js `revalidatePath` after mutations
+- [ ] **9a** After interview slot time passes, mark booking COMPLETED (on-access check)
+- [ ] **9b** Feedback form for panelist (via email link)
+- [ ] **9c** Verdict: PASS → promote to next round, FAIL → REJECTED
 
-**Acceptance**: 10 candidates shortlisted for Round 1, Alice has 5 slots → dashboard shows RED "5 Slot Deficit" badge.
+### Step 10 — Polish & Production Ready
+
+- [ ] Install Sentry
+- [ ] Rate limit `/availability/[token]` and `/book/[token]` endpoints
+- [ ] Analytics funnel page
+- [ ] Profile/settings page
+- [ ] Full mobile responsiveness pass
 
 ---
 
-### Phase 6 — Post-Interview Feedback
-> Goal: Close the loop on completed interviews.
-
-- [ ] **6.1** After interview slot time passes → mark `Booking.status` as COMPLETED (cron or on-access)
-- [ ] **6.2** Send feedback request email to panelist
-- [ ] **6.3** Simple feedback form (linked from email or panelist dashboard):
-  - Score (1-10)
-  - Pass / Fail / Hold
-  - Notes (free text)
-- [ ] **6.4** Candidate advances to next round automatically if passed
-- [ ] **6.5** Update candidate status to REJECTED or promote to `activeRoundId++`
-
-**Acceptance**: Interview complete → panelist submits feedback → candidate promoted to Round 2 → new booking email sent.
-
----
-
-### Phase 7 — Analytics & Polish
-> Goal: Insights and production readiness.
-
-- [ ] **7.1** Analytics page per program:
-  - Funnel: Total → Shortlisted → Booked → Completed → Passed
-  - Avg ATS score of shortlisted vs passed
-  - Average time-to-book (candidate receives email → books slot)
-  - Slot utilization per panelist
-- [ ] **7.2** Profile / settings page (name, email, org name)
-- [ ] **7.3** Sentry integration for error monitoring
-- [ ] **7.4** Rate limiting on magic link endpoints (Upstash Redis)
-- [ ] **7.5** Email delivery status tracking (Resend webhooks)
-- [ ] **7.6** Mobile responsiveness pass on all public pages
-
----
-
-## 7. Environment Variables Required
-
-| Variable | Source | Used For |
-|---|---|---|
-| `DATABASE_URL` | Replit Secrets ✅ | Prisma DB connection |
-| `BETTER_AUTH_SECRET` | Replit Secrets | Better Auth session signing |
-| `RESEND_API_KEY` | Resend dashboard | Sending transactional emails |
-| `OPENAI_API_KEY` | OpenAI dashboard | Resume scoring |
-| `UPLOADTHING_SECRET` | UploadThing dashboard | File upload auth |
-| `UPLOADTHING_APP_ID` | UploadThing dashboard | File upload app ID |
-| `UPSTASH_REDIS_REST_URL` | Upstash console | Rate limiting (Phase 7) |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash console | Rate limiting (Phase 7) |
-| `NEXT_PUBLIC_APP_URL` | Replit Secrets ✅ | Base URL for magic links |
-
----
-
-## 8. Key Design Decisions & Guardrails
-
-### Security
-- Magic link tokens: `crypto.randomBytes(32).toString('hex')` — 256 bits of entropy
-- Booking tokens expire in 72 hours
-- Magic link endpoints rate-limited (max 10 req/min per IP)
-- All recruiter routes protected by middleware + org membership check
-- AI resume content sent to OpenAI — no PII logging, use `store: false` in API call
-
-### Headless Panelist Flow
-- External panelists **never need to create an account**
-- `ProgramPanelist` stores their email + name directly
-- If they are also an internal user, link via optional `userId`
-
-### Smart Slot Snapping
-- Slot duration = round's `durationMinutes`
-- UI only allows selection in exact multiples of slot duration
-- Backend validates slot duration before storing
-
-### Supply/Demand Calculation
-```
-Available Supply (round R) = SUM of unbooked slots for all panelists assigned to R
-Active Demand (round R) = COUNT of candidates with activeRoundId = R and status = ACTIVE
-Health Delta = Available Supply - Active Demand
-```
-
-### Candidate State Machine
-```
-DRAFT → SHORTLISTED → ACTIVE → BOOKED → COMPLETED → (REJECTED at any stage)
-                                  ↑ booking token sent
-                          ↑ activeRoundId assigned
-```
-
----
-
-## 9. File / Folder Structure (Target)
-
-```
-src/
-├── app/
-│   ├── (auth)/
-│   │   ├── sign-in/        → Better Auth login form
-│   │   └── sign-up/        → Better Auth register form
-│   ├── (onboarding)/
-│   │   └── onboarding/     → Create org, become admin
-│   ├── (dashboard)/
-│   │   ├── layout.tsx      → Sidebar + auth guard
-│   │   ├── dashboard/      → Program list + top-level stats
-│   │   └── programs/
-│   │       ├── create/     → Create program
-│   │       └── [id]/
-│   │           ├── page.tsx          → Program overview
-│   │           ├── panelists/        → Panelist manager
-│   │           ├── candidates/       → Candidate inbox
-│   │           └── control-tower/   → Supply/demand health
-│   ├── availability/
-│   │   └── [token]/        → Public: panelist availability UI
-│   ├── book/
-│   │   └── [token]/        → Public: candidate booking UI
-│   ├── api/
-│   │   ├── auth/[...all]/  → Better Auth handler ✅
-│   │   ├── programs/       → Program CRUD
-│   │   ├── candidates/     → Candidate management
-│   │   ├── availability/   → Slot submission
-│   │   ├── book/           → Slot booking
-│   │   ├── reminders/      → Trigger reminder emails
-│   │   └── uploadthing/    → File upload endpoint
-│   └── page.tsx            → Landing page ✅
-├── components/
-│   ├── ui/                 → shadcn primitives ✅
-│   ├── layout/
-│   │   ├── sidebar.tsx     → Fixed sidebar (needs rewrite)
-│   │   └── topbar.tsx      → Mobile topbar
-│   ├── programs/
-│   │   ├── ProgramCard.tsx
-│   │   └── RoundBadge.tsx
-│   ├── panelists/
-│   │   ├── PanelistTable.tsx
-│   │   ├── AvailabilityGrid.tsx   → Time slot picker
-│   │   └── InviteForm.tsx
-│   ├── candidates/
-│   │   ├── CandidateTable.tsx
-│   │   ├── ATSScoreBadge.tsx
-│   │   ├── BulkActions.tsx
-│   │   └── UploadZone.tsx
-│   └── control-tower/
-│       ├── HealthBadge.tsx
-│       ├── CapacityBar.tsx
-│       └── RoundHealthCard.tsx
-├── lib/
-│   ├── auth.ts             ✅ Better Auth server
-│   ├── auth-client.ts      ✅ Better Auth client
-│   ├── prisma.ts           ✅ Prisma singleton
-│   ├── utils.ts            ✅ cn()
-│   ├── tokens.ts           → Magic link token generation
-│   ├── email.ts            → Resend wrapper + templates
-│   ├── ai.ts               → OpenAI resume scoring
-│   └── slots.ts            → Slot conflict/availability logic
-├── actions/
-│   ├── programs.ts         → Server Actions for program CRUD
-│   ├── panelists.ts        → Server Actions for panelist invite
-│   ├── candidates.ts       → Server Actions for candidate management
-│   └── availability.ts     → Server Actions for slot management
-└── middleware.ts            → Route protection
-```
-
----
-
-## 10. Dependency Additions Needed
+## 📦 PART 7 — PACKAGES TO INSTALL (Full List)
 
 ```bash
-# Email
+# Fix create-program crash immediately
+npm install react-hook-form @hookform/resolvers @tanstack/react-query
+
+# Email (panelist invites, booking confirmations)
 npm install resend
 
-# AI scoring
-npm install openai pdf-parse mammoth
-
-# File upload
+# File upload (resumes)
 npm install uploadthing @uploadthing/react
 
-# Rate limiting (Phase 7)
+# AI resume scoring
+npm install openai
+
+# PDF text extraction for AI scoring
+npm install pdf-parse @types/pdf-parse
+
+# Rate limiting (protect magic link endpoints)
 npm install @upstash/ratelimit @upstash/redis
 
-# Error monitoring (Phase 7)
+# Error tracking
 npm install @sentry/nextjs
-
-# Forms (fix create-program)
-npm install react-hook-form @hookform/resolvers
-
-# Calendar / scheduling UI
-npm install react-big-calendar date-fns
-# or lightweight custom grid (preferred)
 ```
 
 ---
 
-## 11. Build Order Summary
+## 📐 PART 8 — ROUTE MAP (Complete Target)
 
-| Phase | Name | Estimated Complexity |
-|---|---|---|
-| **Phase 0** | Foundation Fix | Medium — auth wiring, schema migration |
-| **Phase 1** | Program & Round CRUD | Low — straightforward DB + UI |
-| **Phase 2** | Panelist Engine | High — magic links, slot UI, email |
-| **Phase 3** | Candidate Pipeline | High — file upload, AI scoring, bulk ops |
-| **Phase 4** | Candidate Self-Booking | High — concurrency, token expiry, emails |
-| **Phase 5** | Control Tower | Medium — aggregation queries, real-time feel |
-| **Phase 6** | Post-Interview Feedback | Medium — state machine, email triggers |
-| **Phase 7** | Analytics & Polish | Low-Medium — charts, monitoring |
+```
+PUBLIC ROUTES
+────────────────────────────────────────────────────────
+/                        Landing page               ✅ works
+/sign-in                 Better Auth sign-in        ✅ UI works, auth works
+/sign-up                 Better Auth sign-up        ⚠️ no post-signup redirect
+/onboarding              Create org                 ⚠️ form does nothing
+/availability/[token]    Panelist slot scheduler    ❌ not built
+/book/[token]            Candidate self-booking     ❌ not built
+
+PROTECTED ROUTES (require session + org membership)
+────────────────────────────────────────────────────────
+/dashboard               Overview                   ⚠️ mock data, crashes
+/programs/create         Create program             🔴 9 module errors, crashes app
+/programs/[id]           Program detail             ❌ not built
+/programs/[id]/panelists Panelist manager           ❌ not built
+/programs/[id]/candidates Candidate inbox           ❌ not built
+/programs/[id]/control-tower Control tower         ❌ not built
+/manage-panelists        (sidebar link)             🔴 404
+/schedule-interviews     (sidebar link)             🔴 404
+/profile                 User settings              🔴 404
+
+API ROUTES
+────────────────────────────────────────────────────────
+/api/auth/[...all]       Better Auth handler        ✅ wired
+/api/programs            GET list / POST create     ❌ not built
+/api/programs/[id]       GET / PATCH / DELETE       ❌ not built
+/api/programs/[id]/panelists  Invite panelist       ❌ not built
+/api/programs/[id]/candidates Manage candidates     ❌ not built
+/api/availability/[token] Save panelist slots       ❌ not built
+/api/book/[token]        Confirm booking            ❌ not built
+/api/upload              UploadThing endpoint       ❌ not built
+/api/reminders/[id]      Resend magic link email    ❌ not built
+```
 
 ---
 
-## 12. Open Questions / Decisions Needed
+## 📊 PART 9 — HONEST COMPLETION ESTIMATE
 
-- [ ] **Calendar invites**: Should booking confirmation include a `.ics` file? (Google/Outlook link?)
-- [ ] **Multi-org**: Can one user be admin of multiple orgs? (Currently allowed by schema, but UI supports one)
-- [ ] **External panelists**: Should they ever be able to view their past interviews? (Requires minimal account)
-- [ ] **Candidate portal**: Should candidates have a login to track their status between rounds?
-- [ ] **AI model**: GPT-4o (accurate, $) vs GPT-4o-mini (fast, cheaper) vs Gemini Flash?
-- [ ] **Public career page**: Should HireGrid host a `/apply/[orgSlug]/[programId]` public application form?
-- [ ] **Payment/Billing**: Is this SaaS (multi-tenant, paid tiers) or internal tool?
+| Area | % Complete |
+|---|---|
+| UI/Design (landing, auth pages) | 85% |
+| Authentication backend | 60% (wired, but missing secret, no guard) |
+| Database schema | 35% (base models ok, 3 critical models missing) |
+| Program management | 10% (DB model exists, no API, no real UI) |
+| Panelist engine | 0% |
+| Candidate pipeline | 0% |
+| Candidate booking | 0% |
+| Control Tower | 0% |
+| Email system | 0% |
+| AI resume scoring | 0% |
+| **Overall** | **~15%** |
+
+---
+
+## ❓ PART 10 — OPEN QUESTIONS THAT WILL AFFECT BUILD DECISIONS
+
+1. **Do panelists ever create accounts?** The design says "headless" (no account needed). But if a panelist is also an internal employee, should they have a linked account for history?
+
+2. **Do candidates create accounts?** Or is everything magic-link-only for them too? (Affects whether `Candidate` needs a `userId` foreign key)
+
+3. **Who sends the initial candidate resumes?** Manual upload by recruiter only? CSV import? Public career page (`/apply/[programSlug]`)?
+
+4. **Is the ATS scoring automatic on upload or manual trigger?** Auto-scoring all uploads is simpler but costs API credits for every PDF.
+
+5. **Round duration precision?** Are 45-minute rounds needed or is 30/60/90 sufficient? (Affects slot snapping complexity)
+
+6. **Timezone handling?** All slots stored in UTC and displayed in recruiter's local timezone? Or panelist's timezone?
+
+7. **Calendar invite format?** On booking confirmation, send `.ics` file, Google Calendar link, or both?
+
+8. **Multi-org?** Can one user admin multiple organizations? (Schema supports it but the UI flow assumes one org per user)
