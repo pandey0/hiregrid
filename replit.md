@@ -10,6 +10,7 @@ AI-powered hiring supply chain platform. Balances panelist time slots (supply) a
 - **UI**: Tailwind CSS v4, clean zinc/white aesthetic — no animations, no icons
 - **Email**: Resend (pending integration)
 - **AI scoring**: OpenAI (pending integration)
+- **Excel parsing**: `xlsx` package (server-side)
 - **Package manager**: npm
 
 ## Key Directories
@@ -24,12 +25,26 @@ src/
       onboarding/       # OnboardingForm.tsx client component
     programs/
       create/           # CreateProgramForm.tsx (server action)
-      [id]/             # Program detail, panelists, candidates, control-tower
+      [id]/             # Program detail (rounds, stats, nav to sub-pages)
+        panelists/      # Manage panelists, generate magic links
+        candidates/     # Pipeline tab + Screening Queue tab; add/bulk-upload candidates
+        agencies/       # Create agency links; table with copy link + candidate count
+        control-tower/  # Supply/demand deficit view
     availability/[token]/ # Headless: panelist magic link availability grid
     book/[token]/         # Headless: candidate self-booking grid
+    agency/[token]/       # Headless: agency portal (individual + bulk submit)
+    api/
+      template/candidates/ # GET: download Excel template (.xlsx) for bulk upload
     sign-in/            # Better Auth sign-in route
     sign-up/            # Better Auth sign-up route
-  actions/              # Server Actions: onboarding, programs, panelists, candidates
+  actions/              # Server Actions
+    onboarding.ts
+    programs.ts
+    panelists.ts
+    candidates.ts       # addCandidate, bulkUploadCandidates, approveScreening,
+                        #   shortlistAndActivate, rejectCandidate, confirmBooking,
+                        #   updateCandidateResume
+    agencies.ts         # createAgency, deleteAgency, agencySubmitCandidate, agencyBulkUpload
   components/PageComponents/
     sidebar.tsx         # Text-only sidebar (client)
     SidebarShell.tsx    # Mobile state wrapper (client)
@@ -47,6 +62,7 @@ src/
 2. Login → `/dashboard`
 3. `/dashboard` layout checks: session → org membership → render
 4. Middleware (edge): checks cookie presence for `/dashboard/*` and `/programs/*`
+5. `/agency/[token]` and `/book/[token]` and `/availability/[token]` are fully public
 
 ## Data Model (Prisma)
 
@@ -54,14 +70,32 @@ src/
 - `Organization` + `OrganizationMember` — multi-tenant workspace
 - `Program` → `Round[]` — hiring programs with typed rounds
 - `ProgramPanelist` — magic link token, `availableSlots` JSON, linked to round
-- `Candidate` — booking token, ATS score, status FSM (DRAFT → ACTIVE → BOOKED → COMPLETED)
+- `Agency` — per-program agency with `magicLinkToken`; candidates linked via `agencyId`
+- `Candidate` — expanded profile (phone, linkedIn, currentRole, currentCompany,
+  yearsExperience, resumeUrl, notes, source DIRECT/AGENCY, agencyId)
+  Status FSM: SCREENING → DRAFT → SHORTLISTED → ACTIVE → BOOKED → COMPLETED | REJECTED
 - `Booking` — confirmed slot linking candidate ↔ panelist
+
+## Candidate Flow
+
+### Direct (recruiter-added):
+Add via form or bulk Excel upload → DRAFT → activate for booking (ACTIVE) → BOOKED → COMPLETED
+
+### Agency-submitted:
+Agency uses magic link portal → submits individually or via bulk Excel → SCREENING →
+recruiter approves (DRAFT) or rejects → ACTIVE → BOOKED → COMPLETED
+
+## shadcn/ui Components Installed
+
+button, input, label, card, badge, select, textarea, table, separator, alert-dialog,
+alert, breadcrumb, tooltip, progress, avatar, dropdown-menu, tabs
 
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (required)
 - `BETTER_AUTH_SECRET` — Auth secret (required)
 - `NEXT_PUBLIC_API_URL` — Optional: base URL for auth client
+- `NEXTAUTH_URL` or `NEXT_PUBLIC_APP_URL` — Used to build agency portal links
 
 ## Running
 

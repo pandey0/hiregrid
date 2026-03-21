@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { shortlistAndActivate, rejectCandidate } from "@/actions/candidates";
+import { shortlistAndActivate, rejectCandidate, approveScreening } from "@/actions/candidates";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -59,6 +59,36 @@ export default function CandidateActions({
     });
   }
 
+  async function approve() {
+    startTransition(async () => {
+      try {
+        await approveScreening(candidateId);
+        toast.success("Candidate approved — moved to pipeline");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed");
+      }
+    });
+  }
+
+  if (status === "SCREENING") {
+    return (
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={approve} disabled={isPending} className="h-7 text-xs px-3">
+          Approve
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reject}
+          disabled={isPending}
+          className="h-7 text-xs text-zinc-300 hover:text-red-500 hover:bg-red-50"
+        >
+          Reject
+        </Button>
+      </div>
+    );
+  }
+
   if (status === "ACTIVE" || status === "BOOKED") {
     return (
       <Button
@@ -90,12 +120,7 @@ export default function CandidateActions({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            className="h-7 text-xs px-2"
-          >
+          <Button variant="outline" size="sm" disabled={isPending} className="h-7 text-xs px-2">
             Actions
           </Button>
         </DropdownMenuTrigger>

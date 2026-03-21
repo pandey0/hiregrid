@@ -82,6 +82,7 @@ model Organization {
 
   members  OrganizationMember[]
   programs Program[]
+  agencies Agency[]
 }
 
 model OrganizationMember {
@@ -116,6 +117,7 @@ model Program {
   rounds       Round[]
   panelists    ProgramPanelist[]
   candidates   Candidate[]
+  agencies     Agency[]
 }
 
 model Round {
@@ -144,17 +146,17 @@ enum RoundType {
 // ─── PANELIST ENGINE (Supply) ──────────────────────────────────────────────────
 
 model ProgramPanelist {
-  id            Int       @id @default(autoincrement())
-  programId     Int
-  roundId       Int
-  userId        String?
-  externalEmail String?
-  externalName  String?
+  id             Int       @id @default(autoincrement())
+  programId      Int
+  roundId        Int
+  userId         String?
+  externalEmail  String?
+  externalName   String?
   magicLinkToken  String    @unique
   magicLinkUsedAt DateTime?
   availableSlots  Json      @default("[]")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   program  Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
   round    Round     @relation(fields: [roundId], references: [id])
@@ -162,33 +164,66 @@ model ProgramPanelist {
   bookings Booking[]
 }
 
+// ─── AGENCIES ──────────────────────────────────────────────────────────────────
+
+model Agency {
+  id             Int      @id @default(autoincrement())
+  name           String
+  contactPerson  String?
+  email          String
+  magicLinkToken String   @unique
+  organizationId Int
+  programId      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program      Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  candidates   Candidate[]
+}
+
 // ─── CANDIDATE PIPELINE (Demand) ───────────────────────────────────────────────
 
 model Candidate {
-  id             Int             @id @default(autoincrement())
-  programId      Int
-  organizationId Int
-  name           String
-  email          String
-  resumeUrl      String?
-  atsScore       Float?
-  atsReason      String?
-  status         CandidateStatus @default(DRAFT)
-  activeRoundId  Int?
-  bookingToken    String?   @unique
+  id              Int             @id @default(autoincrement())
+  programId       Int
+  organizationId  Int
+  name            String
+  email           String
+  phone           String?
+  linkedIn        String?
+  currentRole     String?
+  currentCompany  String?
+  yearsExperience Int?
+  notes           String?
+  resumeUrl       String?
+  source          CandidateSource @default(DIRECT)
+  agencyId        Int?
+  atsScore        Float?
+  atsReason       String?
+  status          CandidateStatus @default(DRAFT)
+  activeRoundId   Int?
+  bookingToken    String?         @unique
   bookingTokenExp DateTime?
   bookingRoundId  Int?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   program     Program   @relation(fields: [programId], references: [id])
   activeRound Round?    @relation("ActiveRound", fields: [activeRoundId], references: [id])
+  agency      Agency?   @relation(fields: [agencyId], references: [id])
   bookings    Booking[]
 
   @@unique([programId, email])
 }
 
+enum CandidateSource {
+  DIRECT
+  AGENCY
+}
+
 enum CandidateStatus {
+  SCREENING
   DRAFT
   SHORTLISTED
   ACTIVE

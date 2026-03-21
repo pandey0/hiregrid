@@ -37,15 +37,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
     include: {
       rounds: {
         orderBy: { roundNumber: "asc" },
-        include: {
-          _count: { select: { panelists: true, bookings: true } },
-        },
+        include: { _count: { select: { panelists: true, bookings: true } } },
       },
-      _count: { select: { candidates: true, panelists: true } },
+      _count: { select: { candidates: true, panelists: true, agencies: true } },
     },
   });
 
   if (!program) notFound();
+
+  const screeningCount = await prisma.candidate.count({
+    where: { programId: parseInt(id), status: "SCREENING" },
+  });
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -53,9 +55,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </BreadcrumbLink>
+              <BreadcrumbLink asChild><Link href="/dashboard">Dashboard</Link></BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -75,11 +75,12 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-4 gap-4 mb-10">
         {[
           { label: "Rounds", value: program.rounds.length },
           { label: "Panelists", value: program._count.panelists },
           { label: "Candidates", value: program._count.candidates },
+          { label: "Agencies", value: program._count.agencies },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="pt-5 pb-4 px-5">
@@ -90,16 +91,25 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         {[
-          { label: "Manage panelists", href: `/programs/${program.id}/panelists` },
-          { label: "Candidate inbox", href: `/programs/${program.id}/candidates` },
+          { label: "Panelists", href: `/programs/${program.id}/panelists` },
+          {
+            label: "Candidates",
+            href: `/programs/${program.id}/candidates`,
+            badge: screeningCount > 0 ? `${screeningCount} screening` : undefined,
+          },
+          { label: "Agencies", href: `/programs/${program.id}/agencies` },
           { label: "Control Tower", href: `/programs/${program.id}/control-tower` },
         ].map((l) => (
-          <Button key={l.href} variant="outline" asChild className="justify-between h-auto py-4 px-5">
+          <Button key={l.href} variant="outline" asChild className="justify-between h-auto py-4 px-5 flex-col items-start gap-1">
             <Link href={l.href}>
               <span className="text-sm font-medium">{l.label}</span>
-              <span className="text-zinc-400">→</span>
+              {l.badge ? (
+                <Badge className="text-[11px] bg-purple-600 hover:bg-purple-600">{l.badge}</Badge>
+              ) : (
+                <span className="text-xs text-zinc-400">→</span>
+              )}
             </Link>
           </Button>
         ))}
