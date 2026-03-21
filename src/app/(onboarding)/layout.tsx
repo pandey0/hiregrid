@@ -1,11 +1,5 @@
-import { ReactNode } from 'react'
-import {Navbar} from './navbar'
- 
-export default function Layout({ children }:{ children: ReactNode }) {
-  return (
-    <>
-      <Navbar />
-      <main>{children}</main>
-    </>
-  )
+import { ReactNode } from "react";
+
+export default function OnboardingLayout({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

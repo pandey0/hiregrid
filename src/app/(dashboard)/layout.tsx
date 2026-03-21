@@ -1,47 +1,25 @@
-// app/(dashboard)/layout.tsx
-'use client';
+import { ReactNode } from "react";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import SidebarShell from "@/components/PageComponents/SidebarShell";
 
-import { ReactNode, useState } from "react";
-import Sidebar from "@/components/PageComponents/sidebar"
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export default function DashboardLayout({ children }: LayoutProps) {
-  const [isMobileOpen, setMobileOpen] = useState(false);
+  const membership = await prisma.organizationMember.findFirst({
+    where: { userId: session.user.id },
+  });
+  if (!membership) redirect("/onboarding");
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setMobileOpen(!isMobileOpen)}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
-
-      {/* Sidebar */}
-      <Sidebar isMobileOpen={false} setMobileOpen={function (open: boolean): void {
-        throw new Error("Function not implemented.");
-      } } />
-
-      {/* Main content */}
-      <div className="md:pl-64">
+    <div className="min-h-screen bg-zinc-50">
+      <SidebarShell user={{ name: session.user.name, email: session.user.email }} />
+      <div className="md:pl-56">
         <main className="min-h-screen">{children}</main>
       </div>
-
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-0 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
     </div>
   );
 }

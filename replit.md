@@ -1,40 +1,77 @@
-# HireGrid AI
+# HireGrid
 
-An AI-powered hiring management platform built with Next.js 15, Prisma, and Better Auth.
+AI-powered hiring supply chain platform. Balances panelist time slots (supply) against candidate interview demand across multi-round hiring programs.
 
 ## Architecture
 
-- **Framework**: Next.js 15 (App Router)
-- **Database**: PostgreSQL via Prisma ORM
-- **Auth**: Better Auth with Prisma adapter (email + password)
-- **UI**: Tailwind CSS v4, Radix UI, Framer Motion, shadcn/ui
+- **Framework**: Next.js 15 (App Router, Server Components)
+- **Database**: PostgreSQL via Prisma ORM (output: `src/generated/prisma`)
+- **Auth**: Better Auth with Prisma adapter (email + password). Secret: `BETTER_AUTH_SECRET` env var.
+- **UI**: Tailwind CSS v4, clean zinc/white aesthetic — no animations, no icons
+- **Email**: Resend (pending integration)
+- **AI scoring**: OpenAI (pending integration)
 - **Package manager**: npm
 
 ## Key Directories
 
-- `src/app/` — Next.js App Router pages and API routes
-- `src/lib/` — Shared utilities: `auth.ts` (server auth), `auth-client.ts` (client auth), `prisma.ts`
-- `src/components/` — Shared UI components
-- `prisma/schema.prisma` — Database schema (Users, Orgs, Programs, Rounds, Applicants)
-- `src/generated/prisma/` — Auto-generated Prisma client (do not edit)
+```
+src/
+  app/
+    (dashboard)/        # Protected layout: session + org membership check
+      dashboard/        # Main dashboard with real DB stats
+      layout.tsx        # Auth guard: redirects to /sign-in or /onboarding
+    (onboarding)/       # Org setup flow (post-registration)
+      onboarding/       # OnboardingForm.tsx client component
+    programs/
+      create/           # CreateProgramForm.tsx (server action)
+      [id]/             # Program detail, panelists, candidates, control-tower
+    availability/[token]/ # Headless: panelist magic link availability grid
+    book/[token]/         # Headless: candidate self-booking grid
+    sign-in/            # Better Auth sign-in route
+    sign-up/            # Better Auth sign-up route
+  actions/              # Server Actions: onboarding, programs, panelists, candidates
+  components/PageComponents/
+    sidebar.tsx         # Text-only sidebar (client)
+    SidebarShell.tsx    # Mobile state wrapper (client)
+  lib/
+    auth.ts             # Better Auth server instance
+    auth-client.ts      # Better Auth client (signIn, signUp, signOut)
+    prisma.ts           # Prisma client singleton
+    tokens.ts           # Crypto token generation
+  middleware.ts         # Edge: cookie-based auth guard for /dashboard, /programs
+```
 
-## Environment Variables / Secrets
+## Auth Flow
+
+1. Register → `/onboarding` → create org → `/dashboard`
+2. Login → `/dashboard`
+3. `/dashboard` layout checks: session → org membership → render
+4. Middleware (edge): checks cookie presence for `/dashboard/*` and `/programs/*`
+
+## Data Model (Prisma)
+
+- `User` / `Session` / `Account` / `Verification` — Better Auth tables
+- `Organization` + `OrganizationMember` — multi-tenant workspace
+- `Program` → `Round[]` — hiring programs with typed rounds
+- `ProgramPanelist` — magic link token, `availableSlots` JSON, linked to round
+- `Candidate` — booking token, ATS score, status FSM (DRAFT → ACTIVE → BOOKED → COMPLETED)
+- `Booking` — confirmed slot linking candidate ↔ panelist
+
+## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (required)
-- `NEXT_PUBLIC_API_URL` — Optional: base URL for auth client; falls back to `window.location.origin`
+- `BETTER_AUTH_SECRET` — Auth secret (required)
+- `NEXT_PUBLIC_API_URL` — Optional: base URL for auth client
 
-## Running the App
+## Running
 
-The dev script auto-generates the Prisma client before starting Next.js:
-
-```
-npm run dev   # runs on port 5000, host 0.0.0.0
+```bash
+npm run dev     # prisma generate + next dev on port 5000
 npm run build
-npm run start
+npx prisma db push   # apply schema changes to DB
+npx prisma generate  # regenerate client after schema changes
 ```
 
-## Replit Configuration
+## Design
 
-- Port: **5000** (required for Replit webview)
-- Host: **0.0.0.0** (required for Replit proxy)
-- Workflow: "Start application" → `npm run dev`
+Clean, minimal, no flash. Zinc palette. White backgrounds. No icons in navigation (text only). No animations. Thin borders. Typographic hierarchy.

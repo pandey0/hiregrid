@@ -8,164 +8,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =====================
-// USER (Better Auth Compatible)
-// =====================
+// ─── BETTER AUTH ───────────────────────────────────────────────────────────────
+
 model User {
-  id             String    @id
-  name           String
-  email          String    @unique
-  emailVerified  Boolean   @default(false)
-  image          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  memberships    OrganizationMember[] // per-organization roles
-  applicants     Applicant[]
-  panelists      Panelist[]
+  accounts         Account[]
+  sessions         Session[]
+  memberships      OrganizationMember[]
+  programPanelists ProgramPanelist[]
+
+  @@map("user")
 }
 
-// =====================
-// ORGANIZATION
-// =====================
-model Organization {
-  id          Int                     @id @default(autoincrement())
-  name        String
-  address     String?
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-
-  // Relationships
-  members     OrganizationMember[]
-  programs    Program[]
-  invites     OrganizationInvite[]
-}
-
-// =====================
-// MEMBERSHIP (Role per organization)
-// =====================
-model OrganizationMember {
-  id              Int              @id @default(autoincrement())
-  userId          String
-  organizationId  Int
-  role            OrgRole          @default(APPLICANT)
-
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, organizationId]) // a user can't join the same org twice
-}
-
-enum OrgRole {
-  ADMIN
-  PANELIST
-  APPLICANT
-  HR
-}
-
-// =====================
-// INVITES
-// =====================
-model OrganizationInvite {
-  id              Int           @id @default(autoincrement())
-  organizationId  Int
-  email           String
-  token           String        @unique
-  expiresAt       DateTime
-  role            OrgRole       @default(APPLICANT)
-  accepted        Boolean       @default(false)
-
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-}
-
-// =====================
-// PROGRAMS, ROUNDS & PANELISTS
-// =====================
-model Program {
-  id              Int           @id @default(autoincrement())
-  name            String
-  description     String?
-  organizationId  Int
-  organization    Organization  @relation(fields: [organizationId], references: [id])
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  rounds          Round[]
-}
-
-model Round {
-  id              Int           @id @default(autoincrement())
-  name            String
-  description     String?
-  roundNumber     Int
-  durationHours   Int
-  programId       Int
-  program         Program       @relation(fields: [programId], references: [id])
-  panelists       RoundPanelist[]
-  applicants      RoundApplicant[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-}
-
-model Panelist {
-  id              Int        @id @default(autoincrement())
-  userId          String
-  user            User       @relation(fields: [userId], references: [id])
-  expertise       String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  rounds          RoundPanelist[]
-}
-
-model RoundPanelist {
-  id          Int       @id @default(autoincrement())
-  roundId     Int
-  panelistId  Int
-  round       Round     @relation(fields: [roundId], references: [id])
-  panelist    Panelist  @relation(fields: [panelistId], references: [id])
-}
-
-// =====================
-// APPLICANTS
-// =====================
-model Applicant {
-  id             Int             @id @default(autoincrement())
-  userId         String
-  user           User            @relation(fields: [userId], references: [id])
-  status         ApplicantStatus @default(PENDING)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  rounds         RoundApplicant[]
-}
-
-model RoundApplicant {
-  id           Int            @id @default(autoincrement())
-  roundId      Int
-  applicantId  Int
-  round        Round          @relation(fields: [roundId], references: [id])
-  applicant    Applicant      @relation(fields: [applicantId], references: [id])
-  status       RoundStatus    @default(SCHEDULED)
-  feedback     String?
-  score        Float?
-}
-
-enum ApplicantStatus {
-  PENDING
-  SELECTED
-  REJECTED
-}
-
-enum RoundStatus {
-  SCHEDULED
-  COMPLETED
-  PASSED
-  FAILED
-}
-
-// =====================
-// BETTER AUTH MODELS
-// =====================
 model Session {
   id        String   @id
   expiresAt DateTime
@@ -208,4 +69,164 @@ model Verification {
   updatedAt  DateTime? @updatedAt
 
   @@map("verification")
+}
+
+// ─── ORGANIZATION ──────────────────────────────────────────────────────────────
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  OrganizationMember[]
+  programs Program[]
+}
+
+model OrganizationMember {
+  id             Int          @id @default(autoincrement())
+  userId         String
+  organizationId Int
+  role           OrgRole      @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+enum OrgRole {
+  ADMIN
+  HR
+  MEMBER
+}
+
+// ─── PROGRAMS & ROUNDS ─────────────────────────────────────────────────────────
+
+model Program {
+  id             Int      @id @default(autoincrement())
+  name           String
+  description    String?
+  organizationId Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  rounds       Round[]
+  panelists    ProgramPanelist[]
+  candidates   Candidate[]
+}
+
+model Round {
+  id              Int       @id @default(autoincrement())
+  name            String
+  description     String?
+  roundNumber     Int
+  durationMinutes Int       @default(60)
+  roundType       RoundType @default(HUMAN_INTERVIEW)
+  programId       Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  program          Program           @relation(fields: [programId], references: [id], onDelete: Cascade)
+  panelists        ProgramPanelist[]
+  bookings         Booking[]
+  activeCandidates Candidate[]       @relation("ActiveRound")
+}
+
+enum RoundType {
+  ATS_SCREENING
+  HUMAN_INTERVIEW
+  ASSIGNMENT
+}
+
+// ─── PANELIST ENGINE (Supply) ──────────────────────────────────────────────────
+
+model ProgramPanelist {
+  id            Int       @id @default(autoincrement())
+  programId     Int
+  roundId       Int
+  userId        String?
+  externalEmail String?
+  externalName  String?
+  magicLinkToken  String    @unique
+  magicLinkUsedAt DateTime?
+  availableSlots  Json      @default("[]")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  program  Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
+  round    Round     @relation(fields: [roundId], references: [id])
+  user     User?     @relation(fields: [userId], references: [id])
+  bookings Booking[]
+}
+
+// ─── CANDIDATE PIPELINE (Demand) ───────────────────────────────────────────────
+
+model Candidate {
+  id             Int             @id @default(autoincrement())
+  programId      Int
+  organizationId Int
+  name           String
+  email          String
+  resumeUrl      String?
+  atsScore       Float?
+  atsReason      String?
+  status         CandidateStatus @default(DRAFT)
+  activeRoundId  Int?
+  bookingToken    String?   @unique
+  bookingTokenExp DateTime?
+  bookingRoundId  Int?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  program     Program   @relation(fields: [programId], references: [id])
+  activeRound Round?    @relation("ActiveRound", fields: [activeRoundId], references: [id])
+  bookings    Booking[]
+
+  @@unique([programId, email])
+}
+
+enum CandidateStatus {
+  DRAFT
+  SHORTLISTED
+  ACTIVE
+  BOOKED
+  COMPLETED
+  REJECTED
+}
+
+// ─── BOOKINGS ──────────────────────────────────────────────────────────────────
+
+model Booking {
+  id                Int           @id @default(autoincrement())
+  candidateId       Int
+  programPanelistId Int
+  roundId           Int
+  slotStart         DateTime
+  slotEnd           DateTime
+  status            BookingStatus @default(SCHEDULED)
+  score             Float?
+  verdict           Verdict?
+  feedback          String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  candidate       Candidate       @relation(fields: [candidateId], references: [id])
+  programPanelist ProgramPanelist @relation(fields: [programPanelistId], references: [id])
+  round           Round           @relation(fields: [roundId], references: [id])
+}
+
+enum BookingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Verdict {
+  PASS
+  FAIL
+  HOLD
 }
