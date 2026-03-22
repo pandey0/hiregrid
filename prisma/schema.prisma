@@ -118,7 +118,6 @@ model OrganizationInvite {
 
 enum OrgRole {
   ADMIN
-  HR
   MEMBER
 }
 
@@ -165,6 +164,7 @@ model Round {
   roundNumber     Int
   durationMinutes Int       @default(60)
   roundType       RoundType @default(HUMAN_INTERVIEW)
+  focusAreas      Json?     @default("[]")
   programId       Int
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

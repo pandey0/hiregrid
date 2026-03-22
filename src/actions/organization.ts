@@ -52,7 +52,7 @@ export async function addMemberByEmail(formData: FormData) {
       data: {
         userId: userToInvite.id,
         organizationId: adminMembership.organizationId,
-        role: role as "ADMIN" | "HR" | "MEMBER",
+        role: role as "ADMIN" | "MEMBER",
       },
     });
   } else {
@@ -65,13 +65,13 @@ export async function addMemberByEmail(formData: FormData) {
         },
       },
       update: {
-        role: role as "ADMIN" | "HR" | "MEMBER",
+        role: role as "ADMIN" | "MEMBER",
         invitedBy: session.user.id,
       },
       create: {
         email,
         organizationId: adminMembership.organizationId,
-        role: role as "ADMIN" | "HR" | "MEMBER",
+        role: role as "ADMIN" | "MEMBER",
         invitedBy: session.user.id,
       },
     });

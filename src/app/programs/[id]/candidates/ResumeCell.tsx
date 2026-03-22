@@ -20,62 +20,69 @@ export default function ResumeCell({ candidateId, resumeUrl }: { candidateId: nu
     startTransition(async () => {
       try {
         await updateCandidateResume(candidateId, url);
-        toast.success("Resume URL saved");
+        toast.success("Artifact updated");
         setEditing(false);
       } catch {
-        toast.error("Failed to save");
+        toast.error("Process failed");
       }
     });
   }
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1 min-w-40">
+      <div className="flex items-center gap-2 min-w-48">
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
-          className="h-6 text-xs px-2"
+          placeholder="SOURCE URL"
+          className="h-8 rounded-lg font-mono text-[10px] font-bold uppercase tracking-widest px-3 border-slate-200"
           autoFocus
           onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
         />
-        <Button size="sm" onClick={save} disabled={isPending} className="h-6 text-xs px-2">Save</Button>
-        <Button variant="ghost" size="sm" onClick={() => setEditing(false)} className="h-6 text-xs px-1">✕</Button>
+        <button onClick={save} disabled={isPending} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline whitespace-nowrap">
+          SAVE
+        </button>
+        <button onClick={() => setEditing(false)} className="text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-slate-900 whitespace-nowrap">
+          [X]
+        </button>
       </div>
     );
   }
 
   if (resumeUrl) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-4">
         <Tooltip>
           <TooltipTrigger asChild>
             <a
               href={resumeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+              className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] hover:text-blue-600 transition-colors underline decoration-slate-200 underline-offset-4"
             >
-              View
+              SOURCE //
             </a>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs break-all text-xs">{resumeUrl}</TooltipContent>
+          <TooltipContent side="top" className="max-w-xs break-all font-mono text-[10px] bg-slate-900 text-white rounded-lg p-3">
+            {resumeUrl}
+          </TooltipContent>
         </Tooltip>
-        <Button variant="ghost" size="sm" onClick={() => setEditing(true)} className="h-5 w-5 p-0 text-[10px] text-zinc-300 hover:text-zinc-600">
-          ✎
-        </Button>
+        <button 
+          onClick={() => setEditing(true)} 
+          className="text-[10px] font-black text-slate-300 hover:text-slate-900 uppercase tracking-widest"
+        >
+          EDIT
+        </button>
       </div>
     );
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={() => setEditing(true)}
-      className="h-6 text-xs text-zinc-300 hover:text-zinc-600 px-1"
+      className="text-[11px] font-black text-blue-600/40 hover:text-blue-600 uppercase tracking-[0.2em] transition-colors"
     >
-      + Add
-    </Button>
+      + ADD ARTIFACT
+    </button>
   );
 }

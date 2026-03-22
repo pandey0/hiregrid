@@ -70,7 +70,7 @@ export async function parseResumeAndScore(resumeBuffer: Buffer, programName: str
   }
 }
 
-export async function generateInterviewRubric(resumeUrl: string | null, programName: string, roundName: string) {
+export async function generateInterviewRubric(resumeUrl: string | null, programName: string, roundName: string, configuredFocusAreas?: string[]) {
   if (!process.env.OPENAI_API_KEY) return null;
 
   try {
@@ -82,6 +82,10 @@ export async function generateInterviewRubric(resumeUrl: string | null, programN
       resumeText = data.text;
     }
 
+    const focusAreasPrompt = (configuredFocusAreas && configuredFocusAreas.length > 0)
+      ? `The recruiter has specifically requested to focus on: ${configuredFocusAreas.join(", ")}. Ensure these are included in the focusAreas and reflected in the questions.`
+      : "";
+
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -92,6 +96,7 @@ export async function generateInterviewRubric(resumeUrl: string | null, programN
           
           Program: ${programName}
           Round: ${roundName}
+          ${focusAreasPrompt}
           
           Return a JSON object with:
           1. "focusAreas": an array of strings representing key skills to evaluate.

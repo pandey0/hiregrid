@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function AgencyCopyButton({ value }: { value: string }) {
@@ -17,17 +16,17 @@ export default function AgencyCopyButton({ value }: { value: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           onClick={handleCopy}
-          className="text-xs h-7 px-2 text-zinc-400 hover:text-zinc-700"
+          className="text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest transition-colors"
         >
-          {copied ? "Copied!" : "Copy link"}
-        </Button>
+          {copied ? "[ COPIED ]" : "COPY PORTAL //"}
+        </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs break-all text-xs">{value}</TooltipContent>
+      <TooltipContent side="top" className="max-w-xs break-all font-mono text-[10px] bg-slate-900 text-white rounded-lg p-3">
+        {value}
+      </TooltipContent>
     </Tooltip>
   );
 }

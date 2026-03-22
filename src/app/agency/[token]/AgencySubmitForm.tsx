@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
 
 export default function AgencySubmitForm({ token }: { token: string }) {
   const [isPending, startTransition] = useTransition();
-  const [submitted, setSubmitted] = useState(0);
+  const [submittedCount, setSubmittedCount] = useState(0);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,76 +21,102 @@ export default function AgencySubmitForm({ token }: { token: string }) {
     startTransition(async () => {
       try {
         await agencySubmitCandidate(token, fd);
-        toast.success("Candidate submitted for review");
+        toast.success("Identity deployment successful");
         form.reset();
-        setSubmitted((n) => n + 1);
+        setSubmittedCount((n) => n + 1);
       } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "Failed to submit candidate");
+        const error = err as Error;
+        toast.error(error.message || "Deployment failed");
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {submitted > 0 && (
-        <div className="bg-green-50 border border-green-100 rounded-lg px-4 py-2.5 text-sm text-green-700">
-          {submitted} candidate{submitted !== 1 ? "s" : ""} submitted successfully.
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-12">
+      {submittedCount > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between"
+        >
+          <span className="text-emerald-700 font-black text-[12px] uppercase tracking-widest">
+            {submittedCount.toString().padStart(2, '0')} // ENTRIES COMMITTED SUCCESSFULLY
+          </span>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        </motion.div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Full name <span className="text-red-400">*</span></Label>
-          <Input name="name" required placeholder="Jane Smith" />
+      {/* Identity Section */}
+      <section className="space-y-8">
+        <h3 className="font-mono text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] pb-2 border-b border-slate-50">
+          [ IDENTITY // CORE ]
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</Label>
+            <Input name="name" required placeholder="IDENTIFY PERSON" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Network Email</Label>
+            <Input name="email" type="email" required placeholder="PERSON@NETWORK.COM" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Line</Label>
+            <Input name="phone" placeholder="+0 000 000 0000" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Digital Profile</Label>
+            <Input name="linkedIn" placeholder="LINKEDIN.COM/IN/USER" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label>Email <span className="text-red-400">*</span></Label>
-          <Input name="email" type="email" required placeholder="jane@example.com" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Phone</Label>
-          <Input name="phone" placeholder="+1 555 000 0000" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>LinkedIn URL</Label>
-          <Input name="linkedIn" placeholder="https://linkedin.com/in/jane" />
-        </div>
-      </div>
+      </section>
 
-      <Separator />
+      {/* Experience Section */}
+      <section className="space-y-8">
+        <h3 className="font-mono text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] pb-2 border-b border-slate-50">
+          [ ARCHITECTURE // CONTEXT ]
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Active Role</Label>
+            <Input name="currentRole" placeholder="ENGINEER" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Organization</Label>
+            <Input name="currentCompany" placeholder="COMPANY" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tenure // Years</Label>
+            <Input name="yearsExperience" type="number" placeholder="00" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-1.5">
-          <Label>Current role</Label>
-          <Input name="currentRole" placeholder="Senior Engineer" />
+      {/* Artifacts Section */}
+      <section className="space-y-8">
+        <h3 className="font-mono text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] pb-2 border-b border-slate-50">
+          [ ARTIFACTS // REPOSITORY ]
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Resume Source // URL</Label>
+            <Input name="resumeUrl" placeholder="HTTPS://DRIVE.CLOUD/FILE" className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest" />
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Public link preferred for AI analysis.</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Contextual Notes</Label>
+            <Textarea name="notes" rows={2} placeholder="OBSERVATIONS..." className="resize-none rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest p-4" />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label>Current company</Label>
-          <Input name="currentCompany" placeholder="Acme Corp" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Years of experience</Label>
-          <Input name="yearsExperience" type="number" min="0" max="50" placeholder="5" />
-        </div>
-      </div>
+      </section>
 
-      <Separator />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Resume URL</Label>
-          <Input name="resumeUrl" placeholder="https://drive.google.com/..." />
-          <p className="text-[11px] text-zinc-400">Google Drive, Dropbox, or any public link</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Notes</Label>
-          <Textarea name="notes" rows={2} placeholder="Additional notes about this candidate..." className="resize-none" />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Submitting..." : "Submit candidate"}
+      <div className="flex justify-end pt-6">
+        <Button 
+          type="submit" 
+          disabled={isPending}
+          className="h-16 px-12 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-[12px] shadow-2xl shadow-slate-200 transition-all active:scale-95 disabled:opacity-50"
+        >
+          {isPending ? "INITIALIZING..." : "COMMENCE DEPLOYMENT //"}
         </Button>
       </div>
     </form>

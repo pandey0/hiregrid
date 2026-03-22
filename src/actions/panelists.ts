@@ -76,6 +76,7 @@ export async function invitePanelist(formData: FormData) {
   });
 
   revalidatePath(`/programs/${programId}/panelists`);
+  revalidatePath(`/programs/${programId}/rounds/${roundId}`);
 }
 
 export async function saveAvailability(token: string, slots: { start: string; end: string }[]) {

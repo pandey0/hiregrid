@@ -19,31 +19,51 @@ export default function CreateAgencyForm({ programId }: { programId: number }) {
     startTransition(async () => {
       try {
         await createAgency(fd);
-        toast.success("Agency created — copy their magic link from the table");
+        toast.success("Identity network expanded");
         form.reset();
       } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "Failed to create agency");
+        const error = err as Error;
+        toast.error(error.message || "Expansion failed");
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
-      <div className="space-y-1.5">
-        <Label>Agency name</Label>
-        <Input name="name" required placeholder="TalentFirst Agency" />
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="space-y-2">
+        <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Agency Label</Label>
+        <Input 
+          name="name" 
+          required 
+          placeholder="TALENT NETWORK" 
+          className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" 
+        />
       </div>
-      <div className="space-y-1.5">
-        <Label>Contact person</Label>
-        <Input name="contactPerson" placeholder="John Doe" />
+      <div className="space-y-2">
+        <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Contact Person</Label>
+        <Input 
+          name="contactPerson" 
+          placeholder="IDENTIFY CONTACT" 
+          className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" 
+        />
       </div>
-      <div className="space-y-1.5">
-        <Label>Email</Label>
-        <Input name="email" type="email" required placeholder="agency@example.com" />
+      <div className="space-y-2">
+        <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Network Email</Label>
+        <Input 
+          name="email" 
+          type="email" 
+          required 
+          placeholder="AGENCY@NETWORK.COM" 
+          className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" 
+        />
       </div>
-      <div className="flex items-end">
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Creating..." : "Create agency"}
+      <div className="flex items-end pb-0.5">
+        <Button 
+          type="submit" 
+          disabled={isPending} 
+          className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-[11px] shadow-xl shadow-slate-200 transition-all active:scale-95"
+        >
+          {isPending ? "INITIALIZING..." : "CONNECT PARTNER //"}
         </Button>
       </div>
     </form>

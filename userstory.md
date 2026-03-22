@@ -60,6 +60,14 @@ Status: ✅ DONE
 
 ---
 
+* **Story 1.6: Program-Specific Staffing** - As a Recruiter, I can be assigned to multiple programs with different roles (Lead or HR), ensuring granular visibility and control.
+---
+
+### 🔍 Implementation Status
+Status: ✅ DONE
+
+---
+
 # ⚙️ Epic 2: The Supply Engine (Panelist Management)
 
 * **Story 2.1: Panelist Assignment** - As a Recruiter, I can invite a Panelist via email and assign them to specific Rounds within a Program.
@@ -425,6 +433,8 @@ Status: ✅ DONE
 * **Story 15.17: Organization Admin Lockdown** - Only users with the `ADMIN` role can delete hiring programs, ensuring high-stakes destructive actions are restricted to authorized personnel.
 * **Story 15.18: Interview History Preservation** - Panelists are soft-deleted instead of hard-deleted, ensuring that completed interview records, scorecards, and historical data remain accessible even after an interviewer is removed from a program.
 * **Story 15.19: Transactional Double-Booking Prevention** - Explicit state-machine checks inside Prisma serialized transactions ensure that candidates cannot book two slots simultaneously even if using multiple browser tabs.
+* **Story 15.20: Candidate Withdrawal** - As a candidate, I can withdraw from the hiring process directly from my booking portal, which cancels any active bookings and notifies the recruiting team.
+* **Story 15.21: Program Lead Structure Management** - As a Program Lead or Admin, I can modify the names and durations of existing rounds, providing flexibility as the hiring process evolves.
 
 ---
 
@@ -442,5 +452,78 @@ Status: ✅ DONE
 - Organization admin lockdown: ✅
 - Interview history preservation: ✅
 - Transactional double-booking prevention: ✅
+- Candidate withdrawal: ✅
+- Program structure management: ✅
+
+---
+
+# 🛡️ Epic 17: Multi-Program Staffing
+
+* **Story 17.1: Staff Pool Management** - As an Admin, I can invite users to join the organization as "Staff Members" who have no initial access to any hiring data.
+* **Story 17.2: Program-Specific Authority** - As a Program Lead, I can add Staff Members to my program and assign them as "Program HR" (for management) or "Program Lead" (for co-ownership).
+* **Story 17.3: Cross-Program Visibility** - A single user can be assigned to multiple programs with different roles (e.g., Lead for Frontend, HR for Backend).
+
+---
+
+### 🔍 Implementation Status
+Status: ✅ DONE
+
+### ✅ Acceptance Criteria Coverage
+- Staff pool (MEMBER role): ✅
+- Program-specific assignment UI: ✅
+- Multi-role support for same user: ✅
+
+---
+
+# 🤖 Epic 12: The Intelligence Layer (AI Rubrics)
+
+* **Story 12.1: Generate AI Rubric** - Automatically generate customized interview rubrics for each session based on the candidate's resume and the round's focus areas.
+* **Story 12.2: Focus Area Configuration** - As a Recruiter, I can add specific focus areas (e.g., 'React Hooks', 'System Scalability') to a Round, which the AI then uses to customize the interviewer rubric.
+
+---
+
+### 🔍 Implementation Status
+Status: ✅ DONE
+
+### ✅ Acceptance Criteria Coverage
+- Dynamic rubric generation: ✅
+- Recruiter focus areas: ✅
+- Automated background worker: ✅
+
+---
+
+# 🛡️ Epic 18: Partner Ecosystem (Agencies)
+
+* **Story 18.1: Agency Dashboard** - As an Agency, I can use my magic link to see a read-only dashboard of my submitted candidates and their current status (Shortlisted, Interviewing, Rejected).
+
+---
+
+### 🔍 Implementation Status
+Status: ✅ DONE
+
+### ✅ Acceptance Criteria Coverage
+- Read-only Agency Dashboard: ✅
+- Real-time candidate status: ✅
+- Submission history: ✅
+
+---
+
+# 📋 Epic 19: Granular Round Management (Inside the Round)
+
+* **Story 19.1: Dedicated Round Dashboard** - As a Recruiter, I can click into a specific Round to see a focused view of its health, candidates, and panelists, rather than managing everything at the Program level.
+* **Story 19.2: Round-Specific Supply/Demand** - The Round page must show a real-time delta between available panelist slots and active candidates for *only* that round.
+* **Story 19.3: Round Candidate Pipeline** - As a Recruiter, I can see a list of all candidates currently assigned to this round, their booking status, and their evaluation history.
+* **Story 19.4: Round Panelist Roster** - As a Recruiter, I can see which panelists are assigned to this round and their individual contribution to the "supply" (free vs. booked slots).
+* **Story 19.5: Rubric & Focus Area Management** - As a Recruiter, I can manage the AI Rubric focus areas specifically within the context of the round view.
+* **Story 19.6: Unified Architectural Pipeline** - The dedicated candidate pipeline page must follow the typographic architectural design, providing a high-density triage environment.
+
+---
+
+### 🔍 Implementation Status
+Status: ⏳ IN PROGRESS
+
+---
+
+# 📊 Overall Implementation Summary
 
 

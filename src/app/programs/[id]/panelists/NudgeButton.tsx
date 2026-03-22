@@ -1,10 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui/button";
 import { resendPanelistLink } from "@/actions/panelists";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
 
 export default function NudgeButton({ panelistId }: { panelistId: number }) {
   const [isPending, startTransition] = useTransition();
@@ -13,24 +11,21 @@ export default function NudgeButton({ panelistId }: { panelistId: number }) {
     startTransition(async () => {
       try {
         await resendPanelistLink(panelistId);
-        toast.success("Nudge sent via email");
+        toast.success("Identity nudge dispatched");
       } catch (err: unknown) {
         const error = err as Error;
-        toast.error(error.message || "Failed to send nudge");
+        toast.error(error.message || "Dispatch failed");
       }
     });
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={handleNudge}
       disabled={isPending}
-      className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
-      title="Resend magic link"
+      className="text-[10px] font-black text-blue-600/40 hover:text-blue-600 uppercase tracking-widest transition-colors disabled:opacity-30"
     >
-      <Mail className="w-3.5 h-3.5" />
-    </Button>
+      {isPending ? "SENDING..." : "NUDGE //"}
+    </button>
   );
 }

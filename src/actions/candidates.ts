@@ -493,7 +493,8 @@ export async function confirmBooking(token: string, panelistId: number, slotStar
       const rubric = await generateInterviewRubric(
         fullBooking.candidate.resumeUrl,
         fullBooking.programPanelist.program.name,
-        fullBooking.round.name
+        fullBooking.round.name,
+        (fullBooking.round.focusAreas as string[]) || undefined
       );
 
       if (rubric) {
@@ -641,6 +642,7 @@ export async function reassignPanelist(bookingId: number, newPanelistId: number)
     throw new Error("You do not have access to manage bookings for this program.");
   }
 
+  return await prisma.$transaction(async (tx) => {
     const newPanelist = await tx.programPanelist.findUnique({
       where: { id: newPanelistId }
     });
@@ -785,6 +787,54 @@ export async function bulkRejectCandidates(candidateIds: number[]) {
 }
 
 // ─── PII CLEANUP (Story 7.2 / HG-007) ──────────────────────────────────────
+
+export async function withdrawCandidate(token: string) {
+  const candidate = await prisma.candidate.findUnique({
+    where: { bookingToken: token },
+    include: { bookings: { where: { status: "SCHEDULED" } } }
+  });
+
+  if (!candidate) throw new Error("Candidate not found or invalid token");
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Cancel all active bookings
+    for (const booking of candidate.bookings) {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: { status: "CANCELLED" }
+      });
+
+      // Restore panelist slot
+      const panelist = await tx.programPanelist.findUnique({
+        where: { id: booking.programPanelistId }
+      });
+
+      if (panelist) {
+        const slots = (panelist.availableSlots as SlotEntry[]) || [];
+        const updatedSlots = slots.map(s => 
+          s.bookingId === booking.id ? { ...s, booked: false, bookingId: undefined } : s
+        );
+
+        await tx.programPanelist.update({
+          where: { id: panelist.id },
+          data: { availableSlots: updatedSlots }
+        });
+      }
+    }
+
+    // 2. Mark candidate as REJECTED (withdrawn)
+    await tx.candidate.update({
+      where: { id: candidate.id },
+      data: { 
+        status: "REJECTED",
+        notes: (candidate.notes ? candidate.notes + "\n" : "") + "Candidate withdrew from the portal.",
+        bookingToken: null // Kill the token
+      }
+    });
+  });
+
+  revalidatePath("/book/" + token);
+}
 
 export async function performPIICleanup() {
   // This would normally be a restricted internal job

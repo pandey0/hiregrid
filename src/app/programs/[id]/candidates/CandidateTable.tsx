@@ -10,7 +10,6 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
@@ -26,14 +25,14 @@ import ResumeCell from "./ResumeCell";
 import CandidateActions from "./CandidateActions";
 import { cn } from "@/lib/utils";
 
-const statusConfig: Record<string, { label: string; dot: string; className: string }> = {
-  SCREENING:   { label: "Screening",   dot: "bg-purple-500", className: "bg-purple-50 text-purple-700 border-purple-100" },
-  DRAFT:       { label: "Draft",       dot: "bg-slate-400",  className: "bg-slate-50 text-slate-600 border-slate-100" },
-  SHORTLISTED: { label: "Shortlisted", dot: "bg-amber-500",  className: "bg-amber-50 text-amber-700 border-amber-100" },
-  ACTIVE:      { label: "Active",      dot: "bg-blue-500",   className: "bg-blue-50 text-blue-700 border-blue-100" },
-  BOOKED:      { label: "Booked",      dot: "bg-emerald-500", className: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-  COMPLETED:   { label: "Completed",   dot: "bg-slate-600",  className: "bg-slate-100 text-slate-800 border-slate-200" },
-  REJECTED:    { label: "Rejected",    dot: "bg-rose-500",   className: "bg-rose-50 text-rose-700 border-rose-100" },
+const statusConfig: Record<string, { label: string; color: string }> = {
+  SCREENING:   { label: "[ SCREENING ]",   color: "text-purple-600" },
+  DRAFT:       { label: "[ DRAFT ]",       color: "text-slate-400" },
+  SHORTLISTED: { label: "[ SHORTLIST ]",   color: "text-amber-600" },
+  ACTIVE:      { label: "[ ACTIVE ]",      color: "text-blue-600" },
+  BOOKED:      { label: "[ BOOKED ]",      color: "text-emerald-600" },
+  COMPLETED:   { label: "[ FINISHED ]",    color: "text-slate-900" },
+  REJECTED:    { label: "[ REJECTED ]",    color: "text-rose-600" },
 };
 
 type Round = { id: number; name: string; roundNumber: number };
@@ -102,130 +101,148 @@ export default function CandidateTable({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {selected.length > 0 && (
-        <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300 shadow-lg">
-          <div className="flex items-center gap-4">
-            <span className="text-[14px] font-bold">{selected.length} selected</span>
-            <div className="h-4 w-px bg-slate-700" />
+        <div className="bg-slate-900 text-white px-8 py-4 rounded-3xl flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 shadow-2xl shadow-slate-200">
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selection</span>
+              <span className="text-[15px] font-black">{selected.length.toString().padStart(2, '0')} // CANDIDATES</span>
+            </div>
+            
+            <div className="h-8 w-px bg-slate-800" />
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" disabled={isPending} className="text-white hover:bg-slate-800 font-bold h-8">
-                  Move to Round...
+                <Button variant="ghost" disabled={isPending} className="text-white hover:bg-slate-800 font-black h-10 px-6 rounded-xl uppercase tracking-widest text-[11px]">
+                  Deploy to Round ->
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 rounded-xl border-slate-800 bg-slate-900 text-white shadow-2xl">
-                <DropdownMenuLabel className="text-slate-400 text-[11px] uppercase tracking-widest px-3 py-2">Select Target Round</DropdownMenuLabel>
+              <DropdownMenuContent align="start" className="w-64 rounded-2xl border-slate-800 bg-slate-900 text-white shadow-2xl p-2">
+                <DropdownMenuLabel className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em] px-4 py-3">Architecture Path</DropdownMenuLabel>
                 {rounds.map((r) => (
                   <DropdownMenuItem 
                     key={r.id} 
                     onClick={() => handleBulkActivate(r.id)}
-                    className="focus:bg-blue-600 focus:text-white rounded-lg mx-1 cursor-pointer py-2"
+                    className="focus:bg-blue-600 focus:text-white rounded-xl cursor-pointer py-3 px-4 font-bold text-[12px] uppercase tracking-wider"
                   >
-                    Round {r.roundNumber}: {r.name}
+                    R{r.roundNumber} // {r.name}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
             <Button 
               variant="ghost" 
-              size="sm" 
               onClick={handleBulkReject}
               disabled={isPending}
-              className="text-rose-400 hover:text-rose-300 hover:bg-rose-950 font-bold h-8"
+              className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 font-black h-10 px-6 rounded-xl uppercase tracking-widest text-[11px]"
             >
-              Reject All
+              Terminate Flow
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setSelected([])} className="text-slate-400 hover:text-white h-8">
-            Cancel
+          <Button variant="ghost" onClick={() => setSelected([])} className="text-slate-500 hover:text-white font-bold h-10 px-4 uppercase tracking-widest text-[10px]">
+            [ DISMISS ]
           </Button>
         </div>
       )}
 
-      <div className="border-slate-200/60 rounded-[24px] shadow-sm overflow-hidden bg-white">
+      <div className="rounded-[40px] border border-slate-100 shadow-sm overflow-hidden bg-white">
         <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow className="hover:bg-transparent border-slate-100">
-              <TableHead className="w-12 px-6">
+          <TableHeader className="bg-slate-50/30">
+            <TableRow className="hover:bg-transparent border-slate-100 h-16">
+              <TableHead className="w-16 px-8">
                 <Checkbox 
                   checked={selected.length === candidates.length && candidates.length > 0}
                   onCheckedChange={toggleAll}
+                  className="rounded-md border-slate-300"
                 />
               </TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4">Candidate</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4">Experience</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4 text-center">ATS</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4">Status</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4">Round</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-4">Resume</TableHead>
-              <TableHead className="h-10 px-6"></TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4">Identify // Path</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4">Role // Experience</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4 text-center">Score</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4">Status</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4">Active Stage</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-4">Artifacts</TableHead>
+              <TableHead className="w-20 px-8"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {candidates.map((c) => {
-              const cfg = statusConfig[c.status] ?? { label: c.status, dot: "bg-slate-400", className: "bg-slate-50 text-slate-600" };
+              const cfg = statusConfig[c.status] ?? { label: `[ ${c.status} ]`, color: "text-slate-400" };
               const score = c.atsScore !== null && c.atsScore !== undefined ? Math.round(c.atsScore) : null;
               
               return (
                 <TableRow key={c.id} className={cn(
-                  "group transition-colors border-slate-100",
-                  selected.includes(c.id) ? "bg-blue-50/30" : "hover:bg-slate-50/50"
+                  "group transition-all duration-500 border-slate-50 h-24",
+                  selected.includes(c.id) ? "bg-blue-50/20" : "hover:bg-slate-50/30"
                 )}>
-                  <TableCell className="px-6">
+                  <TableCell className="px-8">
                     <Checkbox 
                       checked={selected.includes(c.id)}
                       onCheckedChange={() => toggleOne(c.id)}
+                      className="rounded-md border-slate-200"
                     />
                   </TableCell>
-                  <TableCell className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs uppercase shrink-0">
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-sm uppercase shrink-0 shadow-lg shadow-slate-100">
                         {c.name.charAt(0)}
                       </div>
                       <div>
                         <Link href={`/programs/${c.programId}/candidates/${c.id}`} className="block group/name">
-                          <p className="font-bold text-slate-900 text-[14px] leading-tight group-hover/name:text-blue-600 transition-colors">{c.name}</p>
+                          <p className="font-bold text-slate-900 text-[16px] tracking-tight group-hover/name:text-blue-600 transition-colors leading-none">{c.name}</p>
                         </Link>
-                        <p className="text-[12px] text-slate-500 mt-0.5">{c.email}</p>
+                        <p className="font-mono text-[11px] font-bold text-slate-400 mt-1.5 uppercase tracking-tighter">{c.email}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="px-4">
                     {c.currentRole || c.currentCompany ? (
-                      <div>
-                        {c.currentRole && <p className="text-[13px] font-semibold text-slate-700 leading-tight">{c.currentRole}</p>}
-                        {c.currentCompany && <p className="text-[11px] text-slate-400 mt-0.5">{c.currentCompany}</p>}
+                      <div className="space-y-1">
+                        {c.currentRole && <p className="text-[14px] font-bold text-slate-700 leading-tight">{c.currentRole}</p>}
+                        {c.currentCompany && <p className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">{c.currentCompany}</p>}
                       </div>
                     ) : (
-                      <span className="text-slate-300 text-xs">—</span>
+                      <span className="font-mono text-[10px] text-slate-200 font-bold uppercase tracking-widest">[ NO DATA ]</span>
                     )}
                   </TableCell>
                   <TableCell className="px-4 text-center">
                     {score !== null ? (
-                      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-slate-100 bg-slate-50">
+                      <div className="flex flex-col items-center">
                         <span className={cn(
-                          "text-[11px] font-bold tabular-nums",
+                          "text-xl font-black tabular-nums tracking-tighter",
                           score > 80 ? "text-emerald-600" : score > 60 ? "text-blue-600" : "text-amber-600"
-                        )}>{score}</span>
+                        )}>{score.toString().padStart(2, '0')}</span>
+                        <span className="font-mono text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">MATCH</span>
                       </div>
                     ) : (
-                      <span className="text-slate-300 text-sm">—</span>
+                      <span className="font-mono text-[10px] text-slate-200 font-bold uppercase tracking-widest">[ -- ]</span>
                     )}
                   </TableCell>
                   <TableCell className="px-4">
-                    <Badge className={cn("text-[11px] font-bold tracking-tight px-2 h-6 border shadow-none", cfg.className)}>
-                      <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5 shrink-0", cfg.dot)} />
+                    <span className={cn("font-mono text-[11px] font-black tracking-tighter uppercase whitespace-nowrap", cfg.color)}>
                       {cfg.label}
-                    </Badge>
+                    </span>
                   </TableCell>
-                  <TableCell className="text-slate-500 text-[13px] font-medium px-4">
-                    {c.activeRound?.name ?? <span className="text-slate-300">—</span>}
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-2">
+                      {c.activeRound ? (
+                        <>
+                          <div className="w-1 h-4 bg-slate-900 rounded-full" />
+                          <span className="font-bold text-slate-900 text-[13px] tracking-tight uppercase">
+                            {c.activeRound.name}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-mono text-[10px] text-slate-200 font-bold uppercase tracking-widest">[ UNASSIGNED ]</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="px-4">
                     <ResumeCell candidateId={c.id} resumeUrl={c.resumeUrl} />
                   </TableCell>
-                  <TableCell className="px-6 text-right">
+                  <TableCell className="px-8 text-right">
                     <CandidateActions candidateId={c.id} status={c.status} rounds={rounds} />
                   </TableCell>
                 </TableRow>

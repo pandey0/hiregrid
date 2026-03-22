@@ -6,8 +6,8 @@ import { agencyBulkUpload, type AgencyBulkResult } from "@/actions/agencies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export default function AgencyBulkUpload({ token }: { token: string }) {
   const [isPending, startTransition] = useTransition();
@@ -24,79 +24,98 @@ export default function AgencyBulkUpload({ token }: { token: string }) {
         setResult(res);
         form.reset();
         if (res.created > 0) {
-          toast.success(`${res.created} candidate${res.created !== 1 ? "s" : ""} submitted for review`);
+          toast.success(`Deployment of ${res.created} identities successful`);
         }
       } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : "Upload failed");
+        const error = err as Error;
+        toast.error(error.message || "Bulk deployment failed");
       }
     });
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-zinc-600">
-            Download the template, fill it in with your candidates, and upload it here.
-            All candidates will be submitted for review.
+    <div className="space-y-12">
+      <section className="space-y-8">
+        <h3 className="font-mono text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] pb-2 border-b border-slate-50">
+          [ LOGISTICS // BULK ]
+        </h3>
+        <div className="p-8 rounded-[32px] bg-slate-50 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
+          <p className="text-[14px] text-slate-500 font-medium leading-relaxed max-w-xl">
+            Execute mass candidate ingestion using the required architectural schematic. System will automatically skip existing network identities.
           </p>
+          <Button variant="outline" asChild className="h-12 px-8 rounded-2xl border-slate-200 font-black text-[11px] uppercase tracking-widest shrink-0">
+            <a href="/api/template/candidates" download="candidates-template.xlsx">
+              Download Schematic //
+            </a>
+          </Button>
         </div>
-        <Button variant="outline" size="sm" asChild className="shrink-0">
-          <a href="/api/template/candidates" download="candidates-template.xlsx">
-            Download template
-          </a>
-        </Button>
-      </div>
+      </section>
 
-      <div className="bg-zinc-50 border border-zinc-100 rounded-lg p-4">
-        <p className="text-xs text-zinc-500 mb-2 font-medium">Required columns:</p>
-        <div className="flex flex-wrap gap-1.5">
-          {["name", "email", "phone", "linkedin", "current_role", "current_company", "years_experience", "resume_url"].map((col) => (
-            <Badge key={col} variant="secondary" className="text-[11px] font-mono">{col}</Badge>
-          ))}
-        </div>
-        <p className="text-[11px] text-zinc-400 mt-2">
-          Only <span className="font-medium">name</span> and <span className="font-medium">email</span> are required. Existing emails are skipped automatically.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="agency-bulk-file">Excel or CSV file</Label>
+      <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="space-y-2">
+          <Label htmlFor="agency-bulk-file" className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Source Schematic // Excel or CSV</Label>
           <Input
             id="agency-bulk-file"
             name="file"
             type="file"
             accept=".xlsx,.xls,.csv"
             required
-            className="cursor-pointer"
+            className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest pt-3.5"
           />
         </div>
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Uploading..." : "Upload and submit candidates"}
-        </Button>
-      </form>
 
-      {result && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 text-sm flex-wrap">
-            <Badge variant="default">{result.created} submitted</Badge>
-            {result.skipped > 0 && <Badge variant="secondary">{result.skipped} skipped (already exists)</Badge>}
-            {result.errors.length > 0 && <Badge variant="destructive">{result.errors.length} errors</Badge>}
-          </div>
-          {result.errors.length > 0 && (
-            <Alert variant="destructive" className="py-2">
-              <AlertDescription>
-                <ul className="text-xs space-y-0.5">
-                  {result.errors.map((e) => (
-                    <li key={e.row}>Row {e.row}: {e.reason}</li>
+        {result && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 rounded-[32px] border border-blue-100 bg-blue-50/30 space-y-6"
+          >
+            <div className="flex items-center gap-10">
+              <div className="flex flex-col">
+                <span className="font-mono text-[9px] font-bold text-blue-400 uppercase tracking-widest">Ingested</span>
+                <span className="text-2xl font-black text-blue-700">{result.created.toString().padStart(2, '0')}</span>
+              </div>
+              <div className="w-px h-10 bg-blue-100" />
+              <div className="flex flex-col">
+                <span className="font-mono text-[9px] font-bold text-slate-400 uppercase tracking-widest">Redundant</span>
+                <span className="text-2xl font-black text-slate-600">{result.skipped.toString().padStart(2, '0')}</span>
+              </div>
+              {result.errors.length > 0 && (
+                <>
+                  <div className="w-px h-10 bg-blue-100" />
+                  <div className="flex flex-col">
+                    <span className="font-mono text-[9px] font-bold text-rose-400 uppercase tracking-widest">Failures</span>
+                    <span className="text-2xl font-black text-rose-600">{result.errors.length.toString().padStart(2, '0')}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {result.errors.length > 0 && (
+              <div className="pt-6 border-t border-blue-100">
+                <span className="font-mono text-[10px] font-black text-rose-600 uppercase tracking-widest block mb-4">[ ARCHITECTURAL ERRORS ]</span>
+                <div className="space-y-2">
+                  {result.errors.map((e, i) => (
+                    <p key={i} className="text-[12px] font-bold text-rose-700/60 uppercase tracking-tighter">
+                      Row {e.row} // {e.reason}
+                    </p>
                   ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            disabled={isPending}
+            className="h-16 px-12 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-[12px] shadow-2xl shadow-slate-200 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isPending ? "PROCESSING..." : "COMMENCE IMPORT //"}
+          </Button>
         </div>
-      )}
+      </form>
     </div>
   );
 }

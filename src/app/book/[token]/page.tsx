@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import BookingGrid from "./BookingGrid";
+import BookingClient from "./BookingClient";
 
 export default async function BookingPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -17,12 +17,14 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
 
   if (candidate.bookingTokenExp && candidate.bookingTokenExp < new Date()) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-6">
-        <div className="max-w-sm text-center">
-          <h1 className="text-xl font-semibold text-zinc-900 mb-2">Link expired</h1>
-          <p className="text-sm text-zinc-400">
-            This booking link has expired. Please contact your recruiter for a new link.
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-[40px] p-12 shadow-2xl shadow-slate-200 text-center border border-slate-100">
+          <span className="font-mono text-[12px] font-black text-rose-600 uppercase tracking-[0.4em] block mb-6">[ EXPIRED ]</span>
+          <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter">Access Revoked</h1>
+          <p className="text-slate-500 text-[15px] leading-relaxed mb-8 font-medium">
+            This booking link has expired. Please contact your recruiter for a new unique link.
           </p>
+          <div className="h-px w-12 bg-slate-100 mx-auto" />
         </div>
       </div>
     );
@@ -30,12 +32,29 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
 
   if (candidate.status === "BOOKED" || candidate.status === "COMPLETED") {
     return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-6">
-        <div className="max-w-sm text-center">
-          <h1 className="text-xl font-semibold text-zinc-900 mb-2">Already booked</h1>
-          <p className="text-sm text-zinc-400">
-            You&apos;ve already booked a slot. Check your email for confirmation details.
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-[40px] p-12 shadow-2xl shadow-slate-200 text-center border border-slate-100">
+          <span className="font-mono text-[12px] font-black text-blue-600 uppercase tracking-[0.4em] block mb-6">[ SECURED ]</span>
+          <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter">Confirmed</h1>
+          <p className="text-slate-500 text-[15px] leading-relaxed mb-8 font-medium">
+            You&apos;ve already secured your slot. Please check your email for the calendar invitation and meeting link.
           </p>
+          <div className="h-px w-12 bg-slate-100 mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  if (candidate.status === "REJECTED") {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-[40px] p-12 shadow-2xl shadow-slate-200 text-center border border-slate-100">
+          <span className="font-mono text-[12px] font-black text-slate-400 uppercase tracking-[0.4em] block mb-6">[ CLOSED ]</span>
+          <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter">Withdrawn</h1>
+          <p className="text-slate-500 text-[15px] leading-relaxed mb-8 font-medium">
+            You have successfully withdrawn from this hiring sequence.
+          </p>
+          <div className="h-px w-12 bg-slate-100 mx-auto" />
         </div>
       </div>
     );
@@ -63,40 +82,10 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   availableSlots.sort((a, b) => a.slot.start.localeCompare(b.slot.start));
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="max-w-xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 mb-1">
-            HireGrid · Interview booking
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            {candidate.program.name}
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Hi {candidate.name} — pick a time for {candidate.activeRound?.name}
-          </p>
-        </div>
-
-        {availableSlots.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-8 text-center">
-            <p className="text-sm text-zinc-400">
-              No slots are currently available. Your recruiter is working on scheduling. Please check back later or reply to your invitation email.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-white border border-zinc-200 rounded-xl p-6">
-            <p className="text-sm text-zinc-500 mb-6">
-              Select a slot below. Each slot is{" "}
-              <strong>{candidate.activeRound?.durationMinutes} minutes</strong>. This booking is final.
-            </p>
-            <BookingGrid
-              token={token}
-              slots={availableSlots}
-              durationMinutes={candidate.activeRound?.durationMinutes ?? 60}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+    <BookingClient 
+      candidate={candidate}
+      availableSlots={availableSlots}
+      token={token}
+    />
   );
 }

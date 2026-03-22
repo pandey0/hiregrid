@@ -41,10 +41,10 @@ export default function CandidateActions({
     startTransition(async () => {
       try {
         await shortlistAndActivate(candidateId, parseInt(selectedRoundId));
-        toast.success("Candidate activated — booking link generated");
+        toast.success("Deployment successful");
       } catch (err: unknown) {
         const error = err as Error;
-        toast.error(error.message || "Failed");
+        toast.error(error.message || "Process failed");
       }
     });
   }
@@ -53,10 +53,10 @@ export default function CandidateActions({
     startTransition(async () => {
       try {
         await rejectCandidate(candidateId);
-        toast.success("Candidate rejected");
+        toast.success("Flow terminated");
       } catch (err: unknown) {
         const error = err as Error;
-        toast.error(error.message || "Failed");
+        toast.error(error.message || "Process failed");
       }
     });
   }
@@ -65,56 +65,56 @@ export default function CandidateActions({
     startTransition(async () => {
       try {
         await approveScreening(candidateId);
-        toast.success("Candidate approved — moved to pipeline");
+        toast.success("Entry approved");
       } catch (err: unknown) {
         const error = err as Error;
-        toast.error(error.message || "Failed");
+        toast.error(error.message || "Process failed");
       }
     });
   }
 
   if (status === "SCREENING") {
     return (
-      <div className="flex items-center gap-2">
-        <Button size="sm" onClick={approve} disabled={isPending} className="h-7 text-xs px-3">
-          Approve
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={approve} 
+          disabled={isPending} 
+          className="text-[11px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+        >
+          APPROVE
+        </button>
+        <button
           onClick={reject}
           disabled={isPending}
-          className="h-7 text-xs text-zinc-300 hover:text-red-500 hover:bg-red-50"
+          className="text-[11px] font-black text-rose-600 uppercase tracking-widest hover:underline"
         >
-          Reject
-        </Button>
+          REJECT
+        </button>
       </div>
     );
   }
 
   if (status === "ACTIVE" || status === "BOOKED") {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
         onClick={reject}
         disabled={isPending}
-        className="h-7 text-xs text-zinc-300 hover:text-red-500 hover:bg-red-50"
+        className="text-[11px] font-black text-rose-600/40 hover:text-rose-600 uppercase tracking-widest transition-colors"
       >
-        Reject
-      </Button>
+        TERMINATE
+      </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <Select value={selectedRoundId} onValueChange={setSelectedRoundId}>
-        <SelectTrigger className="h-7 text-xs w-20">
+        <SelectTrigger className="h-8 rounded-lg font-mono text-[10px] font-black w-20 border-slate-100 bg-slate-50 shadow-none">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="rounded-xl border-slate-100 shadow-xl">
           {rounds.map((r) => (
-            <SelectItem key={r.id} value={String(r.id)} className="text-xs">
+            <SelectItem key={r.id} value={String(r.id)} className="text-[11px] font-bold uppercase tracking-widest">
               R{r.roundNumber}
             </SelectItem>
           ))}
@@ -123,22 +123,22 @@ export default function CandidateActions({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={isPending} className="h-7 text-xs px-2">
-            Actions
+          <Button variant="outline" size="sm" disabled={isPending} className="h-8 rounded-lg border-slate-200 font-black text-[10px] uppercase tracking-widest px-4 hover:bg-slate-900 hover:text-white transition-all">
+            MANAGE ->
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel className="text-xs text-zinc-400">Candidate actions</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={activate} className="text-xs cursor-pointer">
-            Activate for booking
+        <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-100 shadow-2xl p-2">
+          <DropdownMenuLabel className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 py-3">Operations</DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-slate-50" />
+          <DropdownMenuItem onClick={activate} className="py-3 px-4 font-bold text-[12px] uppercase tracking-wider cursor-pointer rounded-xl focus:bg-blue-600 focus:text-white">
+            Activate // Generate Link
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-slate-50" />
           <DropdownMenuItem
             onClick={reject}
-            className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+            className="py-3 px-4 font-bold text-[12px] uppercase tracking-wider cursor-pointer rounded-xl text-rose-600 focus:bg-rose-50 focus:text-rose-700"
           >
-            Reject candidate
+            Reject // Terminate Flow
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

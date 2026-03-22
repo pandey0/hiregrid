@@ -49,17 +49,53 @@ export async function createProgram(formData: FormData) {
           roundType: (r.roundType as "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT") || "HUMAN_INTERVIEW",
         })),
       },
-      members: {
+      // Story 17.5: Only auto-assign LEAD if the creator is NOT an Org Admin
+      // Admins already have "God Mode" over all programs.
+      members: membership.role !== "ADMIN" ? {
         create: {
           userId: session.user.id,
           role: "LEAD",
         }
-      }
+      } : undefined
     },
   });
 
   revalidatePath("/dashboard");
   redirect(`/programs/${program.id}`);
+}
+
+export async function updateProgram(programId: number, formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  const membership = await getOrgMembership(session.user.id);
+  if (!membership) throw new Error("No organization found");
+
+  // Story 16.2 & 16.4: Only organization ADMIN or program LEAD can update
+  const isOrgAdmin = membership.role === "ADMIN";
+  const isProgramLead = await prisma.programMember.findFirst({
+    where: { programId, userId: session.user.id, role: "LEAD" }
+  });
+
+  if (!isOrgAdmin && !isProgramLead) {
+    throw new Error("Only organization administrators or the program lead can update this program.");
+  }
+
+  const name = (formData.get("name") as string | null)?.trim();
+  const description = (formData.get("description") as string | null)?.trim();
+
+  if (!name) throw new Error("Program name is required");
+
+  await prisma.program.update({
+    where: { id: programId, organizationId: membership.organizationId },
+    data: {
+      name,
+      description: description || null,
+    },
+  });
+
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function deleteProgram(programId: number) {
@@ -105,4 +141,69 @@ export async function deleteProgram(programId: number) {
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+export async function updateRound(programId: number, roundId: number, data: { name?: string; durationMinutes?: number }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  const membership = await getOrgMembership(session.user.id);
+  if (!membership) throw new Error("No organization found");
+
+  // Story 16.3: Only Admin or LEAD can modify structure
+  const isOrgAdmin = membership.role === "ADMIN";
+  const isProgramLead = await prisma.programMember.findFirst({
+    where: { programId, userId: session.user.id, role: "LEAD" }
+  });
+
+  if (!isOrgAdmin && !isProgramLead) {
+    throw new Error("Only organization administrators or the program lead can modify the interview structure.");
+  }
+
+  const currentRound = await prisma.round.findUnique({ where: { id: roundId } });
+  const durationChanged = data.durationMinutes !== undefined && data.durationMinutes !== currentRound?.durationMinutes;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.round.update({
+      where: { id: roundId, programId },
+      data: {
+        name: data.name,
+        durationMinutes: data.durationMinutes,
+      }
+    });
+
+    if (durationChanged) {
+      // Clear unbooked slots for all panelists in this round
+      const panelists = await tx.programPanelist.findMany({ where: { roundId } });
+      for (const p of panelists) {
+        const slots = (p.availableSlots as SlotEntry[]) || [];
+        const filteredSlots = slots.filter(s => s.booked); // Keep only booked slots
+        await tx.programPanelist.update({
+          where: { id: p.id },
+          data: { availableSlots: filteredSlots }
+        });
+      }
+    }
+  });
+
+  revalidatePath(`/programs/${programId}`);
+}
+
+type SlotEntry = { start: string; end: string; booked: boolean; bookingId?: number };
+
+export async function updateRoundFocusAreas(programId: number, roundId: number, focusAreas: string[]) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  const access = await checkProgramAccess(programId, session.user.id);
+  if (access !== "ADMIN" && access !== "LEAD") {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.round.update({
+    where: { id: roundId, programId },
+    data: { focusAreas }
+  });
+
+  revalidatePath(`/programs/${programId}`);
 }

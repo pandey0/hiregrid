@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 import { invitePanelist } from "@/actions/panelists";
 import { Button } from "@/components/ui/button";
@@ -14,66 +14,82 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Round = { id: number; name: string; roundNumber: number };
-
 export default function InvitePanelistForm({
   programId,
   rounds,
 }: {
   programId: number;
-  rounds: Round[];
+  rounds: { id: number; name: string; roundNumber: number }[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [selectedRoundId, setSelectedRoundId] = useState<string>(String(rounds[0]?.id ?? ""));
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    fd.set("roundId", selectedRoundId);
-    fd.append("programId", String(programId));
     const form = e.currentTarget;
 
     startTransition(async () => {
       try {
         await invitePanelist(fd);
-        toast.success("Panelist invited — magic link sent via email");
+        toast.success("Interviewer deployment successful");
         form.reset();
-        setSelectedRoundId(String(rounds[0]?.id ?? ""));
       } catch (err: unknown) {
         const error = err as Error;
-        toast.error(error.message || "Failed to invite panelist");
+        toast.error(error.message || "Failed to invite interviewer");
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="space-y-2">
-        <Label className="text-[13px] font-bold text-slate-700 ml-1">Name</Label>
-        <Input name="name" placeholder="Jane Smith" className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium" />
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <input type="hidden" name="programId" value={programId} />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="space-y-2">
+          <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Identity Name</Label>
+          <Input 
+            name="name" 
+            required 
+            placeholder="ENTER NAME" 
+            className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" 
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Network Email</Label>
+          <Input 
+            name="email" 
+            type="email" 
+            required 
+            placeholder="PERSON@COMPANY.COM" 
+            className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" 
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Target Stage</Label>
+          <Select name="roundId" defaultValue={String(rounds[0]?.id)}>
+            <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest">
+              <SelectValue placeholder="SELECT ROUND" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+              {rounds.map((r) => (
+                <SelectItem key={r.id} value={String(r.id)} className="py-3 px-4 font-bold text-[12px] uppercase tracking-wider">
+                  R{r.roundNumber} // {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label className="text-[13px] font-bold text-slate-700 ml-1">Email</Label>
-        <Input name="email" type="email" required placeholder="panelist@company.com" className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium" />
-      </div>
-      <div className="space-y-2">
-        <Label className="text-[13px] font-bold text-slate-700 ml-1">Round</Label>
-        <Select value={selectedRoundId} onValueChange={setSelectedRoundId}>
-          <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium">
-            <SelectValue placeholder="Select round" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-slate-200 shadow-xl shadow-slate-900/5">
-            {rounds.map((r) => (
-              <SelectItem key={r.id} value={String(r.id)} className="rounded-lg my-0.5">
-                {r.roundNumber}. {r.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex items-end">
-        <Button type="submit" disabled={isPending} className="w-full bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200/50 rounded-xl h-11 font-bold transition-all">
-          {isPending ? "Inviting..." : "Invite Panelist"}
+
+      <div className="flex justify-end pt-4">
+        <Button 
+          type="submit" 
+          disabled={isPending} 
+          className="h-14 px-12 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-[12px] shadow-xl shadow-slate-200 transition-all active:scale-95"
+        >
+          {isPending ? "INITIALIZING..." : "DEPLOY INTERVIEWER //"}
         </Button>
       </div>
     </form>
