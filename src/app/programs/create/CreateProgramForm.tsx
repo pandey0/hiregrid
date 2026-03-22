@@ -16,8 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Layers, Clock, Sparkles, ChevronRight, Briefcase } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Trash2, Layers, Clock, ChevronRight, Briefcase } from "lucide-react";
 
 type Round = {
   name: string;
@@ -75,9 +74,10 @@ export default function CreateProgramForm() {
     startTransition(async () => {
       try {
         await createProgram(fd);
-      } catch (err: any) {
-        if (!err?.message?.includes("NEXT_REDIRECT")) {
-          toast.error(err?.message || "Failed to create program");
+      } catch (err: unknown) {
+        const error = err as Error;
+        if (!error?.message?.includes("NEXT_REDIRECT")) {
+          toast.error(error.message || "Failed to create program");
         }
       }
     });
@@ -182,7 +182,7 @@ export default function CreateProgramForm() {
                     <Label className="text-[13px] font-bold text-slate-700 ml-1">Round Type</Label>
                     <Select
                       value={round.roundType}
-                      onValueChange={(v) => updateRound(index, "roundType", v)}
+                      onValueChange={(v) => updateRound(index, "roundType", v as "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT")}
                     >
                       <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium">
                         <SelectValue />

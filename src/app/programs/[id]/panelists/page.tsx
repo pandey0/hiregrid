@@ -6,6 +6,7 @@ import Link from "next/link";
 import InvitePanelistForm from "./InvitePanelistForm";
 import { deletePanelist } from "@/actions/panelists";
 import CopyButton from "./CopyButton";
+import NudgeButton from "./NudgeButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,7 +26,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Users, Mail, Link as LinkIcon, Trash2, Calendar, Sparkles, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function formatSlots(slots: unknown): number {
@@ -42,10 +42,11 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
   if (!membership) redirect("/onboarding");
 
   const program = await prisma.program.findFirst({
-    where: { id: parseInt(id), organizationId: membership.organizationId },
+    where: { id: parseInt(id), organizationId: membership.organizationId, deletedAt: null },
     include: {
-      rounds: { orderBy: { roundNumber: "asc" } },
+      rounds: { where: { deletedAt: null }, orderBy: { roundNumber: "asc" } },
       panelists: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         include: { round: true },
       },
@@ -94,9 +95,6 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
           {program.rounds.length === 0 ? (
             <Card className="border-dashed border-slate-200 bg-slate-50/30 rounded-[24px]">
               <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-6 text-slate-200">
-                  <Calendar className="w-8 h-8" />
-                </div>
                 <h3 className="text-xl font-bold text-slate-900">Define rounds first</h3>
                 <p className="text-[15px] text-slate-500 mt-2 max-w-[340px] leading-relaxed">
                   You need to add interview rounds to this program before you can assign panelists.
@@ -106,10 +104,7 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
           ) : (
             <>
               <section className="space-y-6">
-                <div className="flex items-center gap-2.5 px-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Users className="w-4 h-4" />
-                  </div>
+                <div className="flex items-center justify-between px-2">
                   <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Invite Interviewer</h2>
                 </div>
                 <Card className="border-slate-200/60 bg-white/80 backdrop-blur-sm rounded-[24px] shadow-sm overflow-hidden">
@@ -121,12 +116,7 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
 
               <section className="space-y-6">
                 <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Assigned Panelists</h2>
-                  </div>
+                  <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Assigned Panelists</h2>
                 </div>
 
                 {program.panelists.length === 0 ? (
@@ -140,7 +130,7 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader className="bg-slate-50/50">
-                          <TableRow className="hover:bg-transparent">
+                          <TableRow className="hover:bg-transparent border-slate-100">
                             <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-6">Name / Email</TableHead>
                             <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-6">Round</TableHead>
                             <TableHead className="text-[11px] font-bold uppercase tracking-widest text-slate-400 h-10 px-6">Availability</TableHead>
@@ -156,7 +146,7 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
                               <TableRow key={p.id} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
                                 <TableCell className="px-6 py-4">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-[10px] uppercase">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-[10px] uppercase shrink-0">
                                       {(p.externalName || "P").charAt(0)}
                                     </div>
                                     <div>
@@ -183,16 +173,22 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
                                   <CopyButton value={magicLink} />
                                 </TableCell>
                                 <TableCell className="px-6 text-right">
-                                  <form action={deletePanelist.bind(null, p.id, program.id)}>
-                                    <Button
-                                      type="submit"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                  <div className="flex items-center justify-end gap-1">
+                                    <NudgeButton panelistId={p.id} />
+                                    <Button asChild variant="ghost" size="sm" className="h-8 px-2 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all font-semibold text-xs">
+                                      <Link href={`/availability/${p.magicLinkToken}`}>Manage Time</Link>
                                     </Button>
-                                  </form>
+                                    <form action={deletePanelist.bind(null, p.id, program.id)}>
+                                      <Button
+                                        type="submit"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 px-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all font-semibold text-xs"
+                                      >
+                                        Remove
+                                      </Button>
+                                    </form>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
@@ -211,9 +207,6 @@ export default async function PanelistsPage({ params }: { params: Promise<{ id: 
           <Card className="bg-slate-900 border-none rounded-[32px] p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20">
             <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl" />
             <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-                <Sparkles className="w-6 h-6 text-blue-400" />
-              </div>
               <h3 className="text-xl font-bold mb-2">Automate Scheduling</h3>
               <p className="text-slate-400 text-[14px] leading-relaxed mb-8">
                 Panelists get a headless interface to submit availability. No login or calendar syncing needed.

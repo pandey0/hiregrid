@@ -49,6 +49,12 @@ export async function createProgram(formData: FormData) {
           roundType: (r.roundType as "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT") || "HUMAN_INTERVIEW",
         })),
       },
+      members: {
+        create: {
+          userId: session.user.id,
+          role: "LEAD",
+        }
+      }
     },
   });
 
@@ -63,8 +69,38 @@ export async function deleteProgram(programId: number) {
   const membership = await getOrgMembership(session.user.id);
   if (!membership) throw new Error("No organization found");
 
-  await prisma.program.deleteMany({
-    where: { id: programId, organizationId: membership.organizationId },
+  // Story 16.2 & 16.4: Only organization ADMIN or program LEAD can delete
+  const isOrgAdmin = membership.role === "ADMIN";
+  const isProgramLead = await prisma.programMember.findFirst({
+    where: { programId, userId: session.user.id, role: "LEAD" }
+  });
+
+  if (!isOrgAdmin && !isProgramLead) {
+    throw new Error("Only organization administrators or the program lead can delete this program.");
+  }
+
+  // Story 13.3: Cascade cancellation of upcoming bookings
+  await prisma.booking.updateMany({
+    where: {
+      round: {
+        programId: programId
+      },
+      status: "SCHEDULED",
+      slotStart: { gte: new Date() }
+    },
+    data: {
+      status: "CANCELLED"
+    }
+  });
+
+  await prisma.program.updateMany({
+    where: { 
+      id: programId, 
+      organizationId: membership.organizationId 
+    },
+    data: {
+      deletedAt: new Date()
+    }
   });
 
   revalidatePath("/dashboard");

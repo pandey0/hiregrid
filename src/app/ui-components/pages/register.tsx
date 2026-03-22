@@ -38,7 +38,7 @@ const Register = () => {
       await signUp.email(
         { name, email, password },
         {
-          onError: (err: any) => {
+          onError: (err: { error: { message?: string } }) => {
             toast.error(err?.error?.message || "Registration failed");
           },
           onSuccess: () => {

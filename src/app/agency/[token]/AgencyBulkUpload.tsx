@@ -26,8 +26,8 @@ export default function AgencyBulkUpload({ token }: { token: string }) {
         if (res.created > 0) {
           toast.success(`${res.created} candidate${res.created !== 1 ? "s" : ""} submitted for review`);
         }
-      } catch (err: any) {
-        toast.error(err?.message || "Upload failed");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Upload failed");
       }
     });
   }

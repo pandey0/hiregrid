@@ -55,6 +55,9 @@ export default function TopNav({ user }: TopNavProps) {
                 <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
               </div>
               <DropdownMenuSeparator className="bg-slate-100 mb-2" />
+              <DropdownMenuItem asChild className="text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                <Link href="/settings/team">Team Settings</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handleSignOut}
                 className="text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"

@@ -8,36 +8,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── BETTER AUTH ───────────────────────────────────────────────────────────────
+// ─── BETTER AUTH ─────────────────────────────────────────────────────────────
 
 model User {
-  id            String   @id
+  id            String    @id
   name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
+  email         String
+  emailVerified Boolean
   image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime
+  updatedAt     DateTime
+  sessions      Session[]
+  accounts      Account[]
 
-  accounts         Account[]
-  sessions         Session[]
-  memberships      OrganizationMember[]
-  programPanelists ProgramPanelist[]
+  members OrganizationMember[]
+  ProgramPanelist ProgramPanelist[]
+  ProgramMember ProgramMember[]
 
+  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
   ipAddress String?
   userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([token])
   @@map("session")
 }
 
@@ -54,8 +57,8 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime
+  updatedAt             DateTime
 
   @@map("account")
 }
@@ -80,9 +83,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members  OrganizationMember[]
-  programs Program[]
-  agencies Agency[]
+  members    OrganizationMember[]
+  invites    OrganizationInvite[]
+  programs   Program[]
+  agencies   Agency[]
+  candidates Candidate[]
 }
 
 model OrganizationMember {
@@ -97,6 +102,20 @@ model OrganizationMember {
   @@unique([userId, organizationId])
 }
 
+model OrganizationInvite {
+  id             Int      @id @default(autoincrement())
+  email          String
+  organizationId Int
+  role           OrgRole  @default(MEMBER)
+  invitedBy      String
+  createdAt      DateTime @default(now())
+  acceptedAt     DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([email, organizationId])
+}
+
 enum OrgRole {
   ADMIN
   HR
@@ -106,18 +125,37 @@ enum OrgRole {
 // ─── PROGRAMS & ROUNDS ─────────────────────────────────────────────────────────
 
 model Program {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   name           String
   description    String?
   organizationId Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   organization Organization      @relation(fields: [organizationId], references: [id])
   rounds       Round[]
   panelists    ProgramPanelist[]
   candidates   Candidate[]
   agencies     Agency[]
+  members      ProgramMember[]
+}
+
+model ProgramMember {
+  id             Int          @id @default(autoincrement())
+  programId      Int
+  userId         String
+  role           ProgramRole  @default(HR)
+  
+  program        Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, userId])
+}
+
+enum ProgramRole {
+  LEAD
+  HR
 }
 
 model Round {
@@ -130,6 +168,7 @@ model Round {
   programId       Int
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   program          Program           @relation(fields: [programId], references: [id], onDelete: Cascade)
   panelists        ProgramPanelist[]
@@ -146,17 +185,19 @@ enum RoundType {
 // ─── PANELIST ENGINE (Supply) ──────────────────────────────────────────────────
 
 model ProgramPanelist {
-  id             Int       @id @default(autoincrement())
-  programId      Int
-  roundId        Int
-  userId         String?
-  externalEmail  String?
-  externalName   String?
+  id              Int       @id @default(autoincrement())
+  programId       Int
+  roundId         Int
+  userId          String?
+  externalEmail   String?
+  externalName    String?
   magicLinkToken  String    @unique
+  magicLinkTokenExp DateTime?
   magicLinkUsedAt DateTime?
   availableSlots  Json      @default("[]")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   program  Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
   round    Round     @relation(fields: [roundId], references: [id])
@@ -208,11 +249,13 @@ model Candidate {
   bookingRoundId  Int?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
 
-  program     Program   @relation(fields: [programId], references: [id])
-  activeRound Round?    @relation("ActiveRound", fields: [activeRoundId], references: [id])
-  agency      Agency?   @relation(fields: [agencyId], references: [id])
-  bookings    Booking[]
+  program      Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  activeRound  Round?       @relation("ActiveRound", fields: [activeRoundId], references: [id])
+  agency       Agency?      @relation(fields: [agencyId], references: [id])
+  bookings     Booking[]
 
   @@unique([programId, email])
 }
@@ -242,6 +285,10 @@ model Booking {
   slotStart         DateTime
   slotEnd           DateTime
   status            BookingStatus @default(SCHEDULED)
+  fulfillmentStatus FulfillmentStatus @default(PENDING)
+  meetingLink       String?
+  googleEventId     String?
+  aiRubric          Json?
   score             Float?
   verdict           Verdict?
   feedback          String?
@@ -251,6 +298,12 @@ model Booking {
   candidate       Candidate       @relation(fields: [candidateId], references: [id])
   programPanelist ProgramPanelist @relation(fields: [programPanelistId], references: [id])
   round           Round           @relation(fields: [roundId], references: [id])
+}
+
+enum FulfillmentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
 
 enum BookingStatus {

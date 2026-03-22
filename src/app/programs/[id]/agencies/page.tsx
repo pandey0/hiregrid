@@ -25,8 +25,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Building2, Mail, Link as LinkIcon, Trash2, Users, Sparkles, ChevronRight, User } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default async function AgenciesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,7 +35,7 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
   if (!membership) redirect("/onboarding");
 
   const program = await prisma.program.findFirst({
-    where: { id: parseInt(id), organizationId: membership.organizationId },
+    where: { id: parseInt(id), organizationId: membership.organizationId, deletedAt: null },
     include: {
       agencies: {
         orderBy: { createdAt: "desc" },
@@ -86,10 +84,7 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
       <div className="grid lg:grid-cols-12 gap-12">
         <div className="lg:col-span-8 space-y-10">
           <section className="space-y-6">
-            <div className="flex items-center gap-2.5 px-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Building2 className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-between px-2">
               <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Add Partner Agency</h2>
             </div>
             <Card className="border-slate-200/60 bg-white/80 backdrop-blur-sm rounded-[24px] shadow-sm overflow-hidden">
@@ -101,12 +96,7 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
 
           <section className="space-y-6">
             <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Active Partnerships</h2>
-              </div>
+              <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Active Partnerships</h2>
             </div>
 
             {program.agencies.length === 0 ? (
@@ -135,7 +125,7 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
                           <TableRow key={agency.id} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
                             <TableCell className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold uppercase">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
                                   {agency.name.charAt(0)}
                                 </div>
                                 <div>
@@ -145,8 +135,7 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
                               </div>
                             </TableCell>
                             <TableCell className="px-6">
-                              <div className="flex items-center gap-2 text-slate-600 text-[13px] font-medium">
-                                <User className="w-3.5 h-3.5 text-slate-300" />
+                              <div className="text-slate-600 text-[13px] font-medium">
                                 {agency.contactPerson || "—"}
                               </div>
                             </TableCell>
@@ -163,10 +152,10 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
                                 <Button
                                   type="submit"
                                   variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                                  size="sm"
+                                  className="h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all font-semibold text-xs"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  Remove
                                 </Button>
                               </form>
                             </TableCell>
@@ -185,9 +174,6 @@ export default async function AgenciesPage({ params }: { params: Promise<{ id: s
           <Card className="bg-slate-900 border-none rounded-[32px] p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20">
             <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl" />
             <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-                <Sparkles className="w-6 h-6 text-blue-400" />
-              </div>
               <h3 className="text-xl font-bold mb-2">Agency Sourcing</h3>
               <p className="text-slate-400 text-[14px] leading-relaxed mb-8">
                 Streamline external sourcing without complex portal logins. Give every partner their own secure link.

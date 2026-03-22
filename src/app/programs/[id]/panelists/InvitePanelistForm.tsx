@@ -36,34 +36,35 @@ export default function InvitePanelistForm({
     startTransition(async () => {
       try {
         await invitePanelist(fd);
-        toast.success("Panelist invited — copy their magic link from the table below");
+        toast.success("Panelist invited — magic link sent via email");
         form.reset();
         setSelectedRoundId(String(rounds[0]?.id ?? ""));
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to invite panelist");
+      } catch (err: unknown) {
+        const error = err as Error;
+        toast.error(error.message || "Failed to invite panelist");
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
-      <div className="space-y-1.5">
-        <Label>Name</Label>
-        <Input name="name" placeholder="Jane Smith" />
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="space-y-2">
+        <Label className="text-[13px] font-bold text-slate-700 ml-1">Name</Label>
+        <Input name="name" placeholder="Jane Smith" className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium" />
       </div>
-      <div className="space-y-1.5">
-        <Label>Email</Label>
-        <Input name="email" type="email" required placeholder="panelist@company.com" />
+      <div className="space-y-2">
+        <Label className="text-[13px] font-bold text-slate-700 ml-1">Email</Label>
+        <Input name="email" type="email" required placeholder="panelist@company.com" className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium" />
       </div>
-      <div className="space-y-1.5">
-        <Label>Round</Label>
+      <div className="space-y-2">
+        <Label className="text-[13px] font-bold text-slate-700 ml-1">Round</Label>
         <Select value={selectedRoundId} onValueChange={setSelectedRoundId}>
-          <SelectTrigger>
+          <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium">
             <SelectValue placeholder="Select round" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl border-slate-200 shadow-xl shadow-slate-900/5">
             {rounds.map((r) => (
-              <SelectItem key={r.id} value={String(r.id)}>
+              <SelectItem key={r.id} value={String(r.id)} className="rounded-lg my-0.5">
                 {r.roundNumber}. {r.name}
               </SelectItem>
             ))}
@@ -71,8 +72,8 @@ export default function InvitePanelistForm({
         </Select>
       </div>
       <div className="flex items-end">
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "Inviting..." : "Invite"}
+        <Button type="submit" disabled={isPending} className="w-full bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200/50 rounded-xl h-11 font-bold transition-all">
+          {isPending ? "Inviting..." : "Invite Panelist"}
         </Button>
       </div>
     </form>

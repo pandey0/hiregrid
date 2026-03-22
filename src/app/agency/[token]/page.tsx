@@ -13,12 +13,12 @@ export default async function AgencyPortalPage({ params }: { params: Promise<{ t
   const agency = await prisma.agency.findUnique({
     where: { magicLinkToken: token },
     include: {
-      program: { include: { rounds: { orderBy: { roundNumber: "asc" } } } },
+      program: { include: { rounds: { where: { deletedAt: null }, orderBy: { roundNumber: "asc" } } } },
       _count: { select: { candidates: true } },
     },
   });
 
-  if (!agency) notFound();
+  if (!agency || agency.program.deletedAt) notFound();
 
   return (
     <div className="min-h-screen bg-zinc-50">

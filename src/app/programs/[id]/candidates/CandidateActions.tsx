@@ -42,8 +42,9 @@ export default function CandidateActions({
       try {
         await shortlistAndActivate(candidateId, parseInt(selectedRoundId));
         toast.success("Candidate activated — booking link generated");
-      } catch (err: any) {
-        toast.error(err?.message || "Failed");
+      } catch (err: unknown) {
+        const error = err as Error;
+        toast.error(error.message || "Failed");
       }
     });
   }
@@ -53,8 +54,9 @@ export default function CandidateActions({
       try {
         await rejectCandidate(candidateId);
         toast.success("Candidate rejected");
-      } catch (err: any) {
-        toast.error(err?.message || "Failed");
+      } catch (err: unknown) {
+        const error = err as Error;
+        toast.error(error.message || "Failed");
       }
     });
   }
@@ -64,8 +66,9 @@ export default function CandidateActions({
       try {
         await approveScreening(candidateId);
         toast.success("Candidate approved — moved to pipeline");
-      } catch (err: any) {
-        toast.error(err?.message || "Failed");
+      } catch (err: unknown) {
+        const error = err as Error;
+        toast.error(error.message || "Failed");
       }
     });
   }

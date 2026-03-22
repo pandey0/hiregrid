@@ -28,8 +28,8 @@ export default function BulkUploadForm({ programId }: { programId: number }) {
         if (res.created > 0) {
           toast.success(`${res.created} candidate${res.created !== 1 ? "s" : ""} imported`);
         }
-      } catch (err: any) {
-        toast.error(err?.message || "Upload failed");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Upload failed");
       }
     });
   }

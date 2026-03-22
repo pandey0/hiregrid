@@ -23,9 +23,9 @@ export default function DeleteProgramButton({ programId }: { programId: number }
     startTransition(async () => {
       try {
         await deleteProgram(programId);
-      } catch (err: any) {
-        if (!err?.message?.includes("NEXT_REDIRECT")) {
-          toast.error(err?.message || "Failed to delete");
+      } catch (err: unknown) {
+        if (err instanceof Error && !err.message.includes("NEXT_REDIRECT")) {
+          toast.error(err.message);
         }
       }
     });

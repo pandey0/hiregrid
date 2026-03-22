@@ -6,14 +6,14 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   const { token } = await params;
 
   const candidate = await prisma.candidate.findUnique({
-    where: { bookingToken: token },
+    where: { bookingToken: token, deletedAt: null },
     include: {
       program: true,
       activeRound: true,
     },
   });
 
-  if (!candidate || !candidate.activeRound || !candidate.bookingRoundId) notFound();
+  if (!candidate || !candidate.activeRound || !candidate.bookingRoundId || candidate.program.deletedAt) notFound();
 
   if (candidate.bookingTokenExp && candidate.bookingTokenExp < new Date()) {
     return (
@@ -42,7 +42,10 @@ export default async function BookingPage({ params }: { params: Promise<{ token:
   }
 
   const panelists = await prisma.programPanelist.findMany({
-    where: { roundId: candidate.bookingRoundId },
+    where: { 
+      roundId: candidate.bookingRoundId,
+      deletedAt: null 
+    },
   });
 
   type SlotEntry = { start: string; end: string; booked?: boolean };

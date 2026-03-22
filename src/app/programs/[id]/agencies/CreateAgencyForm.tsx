@@ -21,8 +21,8 @@ export default function CreateAgencyForm({ programId }: { programId: number }) {
         await createAgency(fd);
         toast.success("Agency created — copy their magic link from the table");
         form.reset();
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to create agency");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to create agency");
       }
     });
   }

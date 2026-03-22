@@ -28,6 +28,12 @@ export async function createAgency(formData: FormData) {
 
   if (!name || !email || !programId) throw new Error("Agency name and email are required");
 
+  // 10.1: Verify program ownership
+  const program = await prisma.program.findUnique({
+    where: { id: programId, organizationId: membership.organizationId, deletedAt: null }
+  });
+  if (!program) throw new Error("Unauthorized or program not found");
+
   await prisma.agency.create({
     data: {
       name,
@@ -48,6 +54,15 @@ export async function deleteAgency(agencyId: number, programId: number) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
+  const membership = await getOrgMembership(session.user.id);
+  if (!membership) throw new Error("No organization found");
+
+  // 10.1: Verify ownership
+  const agency = await prisma.agency.findUnique({
+    where: { id: agencyId, organizationId: membership.organizationId }
+  });
+  if (!agency) throw new Error("Unauthorized");
+
   await prisma.agency.delete({ where: { id: agencyId } });
   revalidatePath(`/programs/${programId}/agencies`);
 }
@@ -55,8 +70,12 @@ export async function deleteAgency(agencyId: number, programId: number) {
 // ─── AGENCY SUBMIT SINGLE CANDIDATE (headless) ─────────────────────────────
 
 export async function agencySubmitCandidate(token: string, formData: FormData) {
-  const agency = await prisma.agency.findUnique({ where: { magicLinkToken: token } });
-  if (!agency) throw new Error("Invalid agency link");
+  const agency = await prisma.agency.findUnique({ 
+    where: { magicLinkToken: token },
+    include: { program: true }
+  });
+  
+  if (!agency || agency.program.deletedAt) throw new Error("Invalid agency link or program closed");
 
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim().toLowerCase();
@@ -105,8 +124,12 @@ export type AgencyBulkResult = {
 };
 
 export async function agencyBulkUpload(token: string, formData: FormData): Promise<AgencyBulkResult> {
-  const agency = await prisma.agency.findUnique({ where: { magicLinkToken: token } });
-  if (!agency) throw new Error("Invalid agency link");
+  const agency = await prisma.agency.findUnique({ 
+    where: { magicLinkToken: token },
+    include: { program: true }
+  });
+  
+  if (!agency || agency.program.deletedAt) throw new Error("Invalid agency link or program closed");
 
   const file = formData.get("file") as File;
   if (!file) throw new Error("No file provided");

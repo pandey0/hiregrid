@@ -28,7 +28,7 @@ const Login = () => {
       await signIn.email(
         { email, password },
         {
-          onError: (err: any) => {
+          onError: (err: { error: { message?: string } }) => {
             toast.error(err?.error?.message || "Sign in failed");
           },
           onSuccess: () => {

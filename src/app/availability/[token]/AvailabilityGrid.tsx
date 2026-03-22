@@ -74,8 +74,8 @@ export default function AvailabilityGrid({
         await saveAvailability(token, slots);
         setSaved(true);
         toast.success("Availability saved — thank you!");
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to save");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to save");
       }
     });
   }

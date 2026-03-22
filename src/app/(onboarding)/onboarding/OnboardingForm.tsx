@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Building2, ChevronRight, Globe } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -37,7 +36,7 @@ export default function OnboardingForm({ userName }: { userName: string }) {
             Welcome, {firstName}
           </h1>
           <p className="text-[15px] text-slate-500 mt-2 font-medium leading-relaxed">
-            Let's set up your hiring workspace to get started.
+            Let&apos;s set up your hiring workspace to get started.
           </p>
         </div>
 

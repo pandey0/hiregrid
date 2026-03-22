@@ -25,8 +25,8 @@ export default function AddCandidateForm({ programId }: { programId: number }) {
         toast.success("Candidate added");
         form.reset();
         setOpen(false);
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to add candidate");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to add candidate");
       }
     });
   }
@@ -81,9 +81,9 @@ export default function AddCandidateForm({ programId }: { programId: number }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Resume URL</Label>
-          <Input name="resumeUrl" placeholder="https://drive.google.com/..." />
-          <p className="text-[11px] text-zinc-400">Link to Google Drive, Dropbox, or any public URL</p>
+          <Label>Resume (PDF)</Label>
+          <Input name="resume" type="file" accept=".pdf" />
+          <p className="text-[11px] text-zinc-400">Upload PDF for AI-powered scoring</p>
         </div>
         <div className="space-y-1.5">
           <Label>Notes</Label>

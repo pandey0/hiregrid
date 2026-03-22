@@ -24,8 +24,8 @@ export default function AgencySubmitForm({ token }: { token: string }) {
         toast.success("Candidate submitted for review");
         form.reset();
         setSubmitted((n) => n + 1);
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to submit candidate");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to submit candidate");
       }
     });
   }

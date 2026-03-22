@@ -1,5 +1,6 @@
 import { PrismaClient } from "@/generated/prisma";
 
+// Ensure the Prisma Client is fresh after schema changes
 const globalForPrisma = global as unknown as {
   prisma: PrismaClient;
 };
