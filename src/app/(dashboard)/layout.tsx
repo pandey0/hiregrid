@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import SidebarShell from "@/components/PageComponents/SidebarShell";
+import TopNav from "@/components/PageComponents/TopNav";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,11 +15,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!membership) redirect("/onboarding");
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <SidebarShell user={{ name: session.user.name, email: session.user.email }} />
-      <div className="md:pl-56">
-        <main className="min-h-screen">{children}</main>
-      </div>
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <TopNav user={{ name: session.user.name, email: session.user.email }} />
+      <main className="min-h-screen pb-20">{children}</main>
     </div>
   );
 }
