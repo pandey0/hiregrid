@@ -15,9 +15,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!membership) redirect("/onboarding");
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-app-bg transition-colors duration-500">
       <TopNav user={{ name: session.user.name, email: session.user.email }} />
-      <main className="min-h-screen pb-20">{children}</main>
+      {/* 
+        Header is ~104px high (h-20 + pt-6). 
+        Adding pt-32 to main to ensure content starts clearly below the floating nav.
+      */}
+      <main className="min-h-screen pt-32 pb-20">{children}</main>
     </div>
   );
 }

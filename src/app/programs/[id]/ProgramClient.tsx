@@ -23,6 +23,7 @@ const roundTypeLabel: Record<string, string> = {
 
 type ProgramClientProps = {
   program: any;
+  candidates: any[];
   screeningCount: number;
   programMembers: any[];
   canManageTeam: boolean;
@@ -30,33 +31,35 @@ type ProgramClientProps = {
 
 export default function ProgramClient({
   program,
+  candidates = [],
   screeningCount,
   programMembers,
   canManageTeam,
 }: ProgramClientProps) {
   const stats = [
     { label: "Stages", value: program.rounds.length },
-    { label: "Panelists", value: program._count.panelists },
-    { label: "Candidates", value: program._count.candidates },
-    { label: "Agencies", value: program._count.agencies },
+    { label: "Total Candidates", value: program._count.candidates },
+    { label: "Screening Queue", value: screeningCount },
+    { label: "Total Panelists", value: program._count.panelists },
   ];
 
   return (
-    <div className="w-full px-8 lg:px-16 py-12 relative">
+    <div className="w-full px-8 lg:px-16 py-12 relative transition-colors duration-500">
       <div className="max-w-[1600px] mx-auto">
+        {/* Navigation & Header */}
         <div className="mb-12">
           <Breadcrumb className="mb-8">
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/dashboard" className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">
+                  <Link href="/dashboard" className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-sub hover:text-app-accent transition-colors">
                     Dashboard //
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="text-slate-300" />
+              <BreadcrumbSeparator className="text-app-border" />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-900">
+                <BreadcrumbPage className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-main">
                   {program.name}
                 </BreadcrumbPage>
               </BreadcrumbItem>
@@ -68,63 +71,55 @@ export default function ProgramClient({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <span className="font-mono text-[11px] font-bold text-blue-600 uppercase tracking-[0.3em] mb-3 block">
-                Program Architecture //
+              <span className="font-mono text-[11px] font-bold text-app-accent uppercase tracking-[0.3em] mb-3 block">
+                Active Program Architecture //
               </span>
-              <h1 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">{program.name}</h1>
+              <h1 className="text-5xl font-black text-app-text-main tracking-tighter leading-none">{program.name}</h1>
               {program.description && (
-                <p className="text-[16px] text-slate-500 mt-4 font-medium max-w-2xl leading-relaxed">
+                <p className="text-[16px] text-app-text-sub mt-4 font-medium max-w-2xl leading-relaxed">
                   {program.description}
                 </p>
               )}
             </motion.div>
             <div className="flex items-center gap-4">
-              <Button variant="outline" asChild className="h-12 px-8 rounded-2xl border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all uppercase tracking-widest text-[11px]">
-                <Link href={`/programs/${program.id}/edit`}>Edit Config //</Link>
+              <Button asChild className="h-12 px-8 rounded-2xl bg-app-text-main text-app-bg hover:bg-app-accent font-black transition-all uppercase tracking-widest text-[11px] shadow-xl shadow-app-accent/10 border-none">
+                <Link href={`/programs/${program.id}/candidates`}>Manage Pipeline //</Link>
+              </Button>
+              <Button variant="outline" asChild className="h-12 px-8 rounded-2xl border-app-border bg-app-card/50 text-app-text-main hover:bg-app-accent hover:text-white transition-all uppercase tracking-widest text-[11px] shadow-none">
+                <Link href={`/programs/${program.id}/edit`}>Config //</Link>
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+        {/* Top Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {stats.map((s, idx) => (
             <motion.div 
               key={s.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="p-8 rounded-[32px] bg-white border border-slate-100 shadow-sm"
+              className="p-8 rounded-4xl bg-app-card border border-app-border shadow-sm"
             >
-              <p className="text-4xl font-black text-slate-900 tabular-nums tracking-tighter">{s.value.toString().padStart(2, '0')}</p>
-              <p className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">{s.label}</p>
+              <p className="text-4xl font-black text-app-text-main tabular-nums tracking-tighter">{s.value.toString().padStart(2, '0')}</p>
+              <p className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-[0.2em] mt-2">{s.label}</p>
             </motion.div>
           ))}
         </div>
 
         <div className="grid lg:grid-cols-12 gap-16">
-          <div className="lg:col-span-8 space-y-12">
-            <div className="flex items-center gap-6">
-              <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-[0.4em] whitespace-nowrap">
-                Hiring Sequence
-              </h2>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-100 to-transparent" />
-            </div>
-
-            {program.rounds.length === 0 ? (
-              <Card className="border-dashed border-slate-200 bg-slate-50/30 rounded-[40px]">
-                <CardContent className="flex flex-col items-center justify-center py-24 text-center">
-                  <span className="font-mono text-[12px] font-bold text-slate-300 mb-4 uppercase tracking-[0.4em]">[ EMPTY SEQUENCE ]</span>
-                  <h3 className="text-xl font-bold text-slate-900">No rounds defined</h3>
-                  <p className="text-[14px] text-slate-500 mt-2 mb-8 max-w-[320px] leading-relaxed">
-                    Establish the hiring stages to begin candidate processing.
-                  </p>
-                  <Button variant="outline" className="rounded-2xl h-11 px-8 border-slate-200 font-bold uppercase tracking-widest text-[11px]">
-                    Define First Stage //
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="relative space-y-6">
+          {/* Main Hiring Sequence */}
+          <div className="lg:col-span-8 space-y-16">
+            <section className="space-y-10">
+              <div className="flex items-center gap-6">
+                <h2 className="text-[13px] font-bold text-app-text-main uppercase tracking-[0.4em] whitespace-nowrap">
+                  Hiring Sequence
+                </h2>
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-app-border to-transparent" />
+              </div>
+              
+              <div className="space-y-6">
                 {program.rounds.map((round: any, idx: number) => (
                   <motion.div
                     key={round.id}
@@ -133,21 +128,21 @@ export default function ProgramClient({
                     transition={{ delay: 0.3 + idx * 0.1 }}
                   >
                     <Link href={`/programs/${program.id}/rounds/${round.id}`} className="block group">
-                      <div className="relative p-10 rounded-[40px] bg-white border border-slate-100 group-hover:border-blue-200 group-hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] transition-all duration-700 overflow-hidden flex items-center justify-between gap-8">
-                        <div className="flex items-center gap-8">
-                          <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl font-black group-hover:bg-blue-600 transition-colors duration-500 shadow-xl shadow-slate-200">
+                      <div className="arch-card p-10 flex items-center justify-between gap-8 group-hover:border-app-accent/50">
+                        <div className="flex items-center gap-10">
+                          <div className="w-14 h-14 rounded-2xl bg-app-text-main text-app-bg flex items-center justify-center text-xl font-black transition-colors group-hover:bg-app-accent shadow-xl shadow-app-accent/5">
                             {round.roundNumber.toString().padStart(2, '0')}
                           </div>
                           <div>
-                            <h4 className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tighter">
+                            <h4 className="text-2xl font-bold text-app-text-main group-hover:text-app-accent transition-colors tracking-tighter">
                               {round.name}
                             </h4>
                             <div className="flex items-center gap-4 mt-2">
-                              <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">
+                              <span className="arch-mono-label">
                                 {roundTypeLabel[round.roundType]}
                               </span>
                               {round.roundType !== "ATS_SCREENING" && (
-                                <span className="font-mono text-[11px] text-slate-400 font-bold">
+                                <span className="font-mono text-[11px] text-app-text-sub font-bold">
                                   {round.durationMinutes} MIN // SESSION
                                 </span>
                               )}
@@ -156,12 +151,12 @@ export default function ProgramClient({
                         </div>
                         <div className="flex items-center gap-12">
                           <div className="hidden sm:flex flex-col items-end">
-                            <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Utilization</span>
-                            <p className="text-[15px] font-bold text-slate-900">
-                              {round._count.panelists} <span className="text-slate-400 font-medium text-[13px]">PANELISTS</span> // {round._count.bookings} <span className="text-slate-400 font-medium text-[13px]">BOOKED</span>
+                            <span className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest mb-1">Utilization</span>
+                            <p className="text-[15px] font-bold text-app-text-main">
+                              {round._count.panelists} <span className="text-app-text-sub font-medium text-[13px]">STAFF</span> // {round._count.bookings} <span className="text-app-text-sub font-medium text-[13px]">BOOKED</span>
                             </p>
                           </div>
-                          <span className="font-mono text-[14px] font-black text-slate-200 group-hover:text-blue-600 transition-all duration-500 group-hover:translate-x-2">
+                          <span className="font-mono text-[14px] font-black text-app-text-sub/20 group-hover:text-app-accent transition-all duration-500 group-hover:translate-x-2">
                             VIEW ->
                           </span>
                         </div>
@@ -170,30 +165,32 @@ export default function ProgramClient({
                   </motion.div>
                 ))}
               </div>
-            )}
+            </section>
           </div>
 
+          {/* Sidebar Section */}
           <div className="lg:col-span-4 space-y-16">
+            {/* Quick Overview */}
             <section>
-              <h2 className="text-[13px] font-bold text-slate-900 mb-8 uppercase tracking-[0.4em]">
-                Management
+              <h2 className="text-[12px] font-bold text-app-text-main mb-8 uppercase tracking-[0.4em]">
+                Management // Hub
               </h2>
-              <div className="grid gap-4">
+              <div className="grid gap-3">
                 {[
-                  { label: "Pipeline", href: `/programs/${program.id}/candidates`, badge: screeningCount > 0 ? screeningCount : undefined },
+                  { label: "Candidate Pipeline", href: `/programs/${program.id}/candidates`, badge: screeningCount > 0 ? screeningCount : undefined },
                   { label: "Interviewer Pool", href: `/programs/${program.id}/panelists` },
                   { label: "Partner Agencies", href: `/programs/${program.id}/agencies` },
                   { label: "Operational Hub", href: `/programs/${program.id}/control-tower` },
                 ].map((link) => (
-                  <Button key={link.href} variant="outline" asChild className="w-full h-16 justify-between text-[13px] font-black rounded-3xl border-slate-100 hover:bg-slate-900 hover:text-white transition-all px-8 group uppercase tracking-widest">
+                  <Button key={link.href} variant="outline" asChild className="w-full h-14 justify-between text-[11px] font-black rounded-2xl border-app-border hover:bg-app-text-main hover:text-app-bg transition-all px-6 group uppercase tracking-widest bg-app-card/50 text-app-text-main shadow-none">
                     <Link href={link.href}>
                       {link.label}
                       {link.badge ? (
-                        <span className="font-mono text-[11px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded ml-2">
+                        <span className="font-mono text-[10px] font-bold bg-app-accent text-white px-2 py-0.5 rounded ml-2">
                           [{link.badge}]
                         </span>
                       ) : (
-                        <span className="font-mono text-[12px] opacity-30 group-hover:opacity-100 transition-opacity">-></span>
+                        <span className="font-mono text-[12px] opacity-20 group-hover:opacity-100 transition-opacity">-></span>
                       )}
                     </Link>
                   </Button>
@@ -201,32 +198,33 @@ export default function ProgramClient({
               </div>
             </section>
 
+            {/* Internal Team */}
             <section>
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-[0.4em]">
-                  Program Team
+                <h2 className="text-[12px] font-bold text-app-text-main uppercase tracking-[0.4em]">
+                  Team // Access
                 </h2>
                 {canManageTeam && (
-                  <Link href={`/programs/${program.id}/team`} className="text-[11px] font-mono font-bold text-blue-600 hover:underline uppercase tracking-widest">
+                  <Link href={`/programs/${program.id}/team`} className="text-[10px] font-mono font-bold text-app-accent hover:underline uppercase tracking-widest">
                     Manage //
                   </Link>
                 )}
               </div>
-              <div className="bg-white rounded-[40px] border border-slate-100 p-8 space-y-6">
+              <div className="bg-app-card border border-app-border rounded-4xl p-8 space-y-6 shadow-sm">
                 {programMembers.map((member) => (
                   <div key={member.id} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900 font-black text-xs uppercase shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-app-mono-bg flex items-center justify-center text-app-mono-text font-black text-[10px] uppercase shrink-0">
                         {member.user.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-slate-900 truncate leading-tight">{member.user.name}</p>
-                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter truncate">{member.user.email}</p>
+                        <p className="text-[14px] font-bold text-app-text-main truncate leading-tight">{member.user.name}</p>
+                        <p className="text-[10px] text-app-text-sub font-bold uppercase tracking-tighter truncate">{member.user.email}</p>
                       </div>
                     </div>
                     <span className={cn(
-                      "font-mono text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest",
-                      member.role === "LEAD" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                      "font-mono text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest transition-colors",
+                      member.role === "LEAD" ? "bg-app-accent text-white" : "bg-app-mono-bg text-app-text-sub"
                     )}>
                       {member.role}
                     </span>

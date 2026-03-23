@@ -28,15 +28,26 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
         orderBy: { roundNumber: "asc" },
         include: { _count: { select: { panelists: true, bookings: true } } },
       },
-      _count: { select: { candidates: true, panelists: true, agencies: true } },
+      _count: { select: { candidates: { where: { deletedAt: null } }, panelists: { where: { deletedAt: null } }, agencies: true } },
     },
   });
 
   if (!program) notFound();
 
-  const screeningCount = await prisma.candidate.count({
-    where: { programId: parseInt(id), status: "SCREENING", deletedAt: null },
+  // Fetch candidates to show inline
+  const candidates = await prisma.candidate.findMany({
+    where: { 
+      programId: parseInt(id),
+      deletedAt: null 
+    },
+    include: {
+      activeRound: true,
+      agency: true,
+    },
+    orderBy: { createdAt: "desc" }
   });
+
+  const screeningCount = candidates.filter(c => c.status === "SCREENING").length;
 
   const programMembers = await prisma.programMember.findMany({
     where: { programId: program.id },
@@ -51,6 +62,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ id: st
   return (
     <ProgramClient 
       program={program}
+      candidates={candidates}
       screeningCount={screeningCount}
       programMembers={programMembers}
       canManageTeam={canManageTeam}

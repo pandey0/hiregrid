@@ -10,6 +10,7 @@ import { parseResumeAndScore, generateInterviewRubric } from "@/lib/ai";
 import * as XLSX from "xlsx";
 import { dispatchInterviewFulfillment } from "@/lib/mcp";
 import { checkProgramAccess } from "@/lib/permissions";
+import { invalidateCache } from "@/lib/redis";
 
 async function getOrgMembership(userId: string) {
   return prisma.organizationMember.findFirst({ where: { userId } });
@@ -102,6 +103,7 @@ export async function addCandidate(formData: FormData) {
     },
   });
 
+  await invalidateCache(`control-tower:${programId}`);
   revalidatePath(`/programs/${programId}/candidates`);
 }
 
@@ -188,6 +190,7 @@ export async function bulkUploadCandidates(formData: FormData): Promise<BulkUplo
     }
   }
 
+  await invalidateCache(`control-tower:${programId}`);
   revalidatePath(`/programs/${programId}/candidates`);
   return result;
 }
@@ -241,6 +244,7 @@ export async function approveScreening(candidateId: number) {
     data: { status: "DRAFT" },
   });
 
+  await invalidateCache(`control-tower:${candidate.programId}`);
   revalidatePath(`/programs/${candidate.programId}/candidates`);
 }
 
@@ -280,6 +284,7 @@ export async function shortlistAndActivate(candidateId: number, roundId: number)
     },
   });
 
+  await invalidateCache(`control-tower:${candidate.programId}`);
   revalidatePath(`/programs/${candidate.programId}/candidates`);
 }
 
@@ -306,6 +311,7 @@ export async function rejectCandidate(candidateId: number) {
     data: { status: "REJECTED" },
   });
 
+  await invalidateCache(`control-tower:${candidate.programId}`);
   revalidatePath(`/programs/${candidate.programId}/candidates`);
 }
 
@@ -371,6 +377,7 @@ export async function promoteCandidate(candidateId: number) {
     },
   });
 
+  await invalidateCache(`control-tower:${candidate.programId}`);
   revalidatePath(`/programs/${candidate.programId}/candidates/${candidateId}`);
 }
 
@@ -478,6 +485,8 @@ export async function confirmBooking(token: string, panelistId: number, slotStar
     isolationLevel: "Serializable",
   });
 
+  await invalidateCache(`control-tower:${booking.candidate.programId}`);
+
   // Story 6.2: Dispatch fulfillment asynchronously
   dispatchInterviewFulfillment(booking.id).catch(console.error);
 
@@ -514,7 +523,10 @@ export async function confirmBooking(token: string, panelistId: number, slotStar
 // ─── CANCEL BOOKING (Candidate side) ──────────────────────────────────────
 
 export async function cancelBooking(bookingId: number) {
-  const b = await prisma.booking.findUnique({ where: { id: bookingId } });
+  const b = await prisma.booking.findUnique({ 
+    where: { id: bookingId },
+    include: { candidate: true } 
+  });
   if (!b) throw new Error("Booking not found");
 
   // Story 14.3: Rescheduling Lock (2 hours)
@@ -568,6 +580,7 @@ export async function cancelBooking(bookingId: number) {
     return { newToken };
   });
 
+  await invalidateCache(`control-tower:${b.candidate.programId}`);
   return result;
 }
 
@@ -622,6 +635,7 @@ export async function cancelBookingByRecruiter(bookingId: number) {
     });
   });
 
+  await invalidateCache(`control-tower:${booking.candidate.programId}`);
   revalidatePath(`/programs/${booking.candidate.programId}/candidates/${booking.candidateId}`);
 }
 
@@ -679,6 +693,7 @@ export async function reassignPanelist(bookingId: number, newPanelistId: number)
       data: { availableSlots: updatedNewSlots }
     });
 
+    await invalidateCache(`control-tower:${booking.candidate.programId}`);
     revalidatePath(`/programs/${booking.candidate.programId}/candidates/${booking.candidateId}`);
   });
 }
@@ -705,6 +720,7 @@ export async function markAsNoShow(bookingId: number) {
     data: { status: "NO_SHOW" }
   });
 
+  await invalidateCache(`control-tower:${booking.candidate.programId}`);
   revalidatePath(`/programs/${booking.candidate.programId}/candidates/${booking.candidateId}`);
 }
 
@@ -753,6 +769,7 @@ export async function bulkShortlistAndActivate(candidateIds: number[], roundId: 
 
   const validResults = results.filter(r => r !== null);
   if (validResults.length > 0) {
+    await invalidateCache(`control-tower:${round.programId}`);
     revalidatePath(`/programs/${validResults[0].programId}/candidates`);
   }
 }
@@ -764,6 +781,8 @@ export async function bulkRejectCandidates(candidateIds: number[]) {
   const membership = await getOrgMembership(session.user.id);
   if (!membership) throw new Error("Unauthorized");
 
+  let programId: number | null = null;
+
   const results = await Promise.all(candidateIds.map(async (id) => {
     const candidate = await prisma.candidate.findUnique({
       where: { id },
@@ -774,6 +793,8 @@ export async function bulkRejectCandidates(candidateIds: number[]) {
       return null;
     }
 
+    programId = candidate.programId;
+
     return prisma.candidate.update({
       where: { id },
       data: { status: "REJECTED" },
@@ -781,8 +802,9 @@ export async function bulkRejectCandidates(candidateIds: number[]) {
   }));
 
   const validResults = results.filter(r => r !== null);
-  if (validResults.length > 0) {
-    revalidatePath(`/programs/${validResults[0].programId}/candidates`);
+  if (validResults.length > 0 && programId) {
+    await invalidateCache(`control-tower:${programId}`);
+    revalidatePath(`/programs/${programId}/candidates`);
   }
 }
 
@@ -833,6 +855,7 @@ export async function withdrawCandidate(token: string) {
     });
   });
 
+  await invalidateCache(`control-tower:${candidate.programId}`);
   revalidatePath("/book/" + token);
 }
 
@@ -847,10 +870,11 @@ export async function performPIICleanup() {
       status: { in: ["REJECTED", "COMPLETED"] },
       deletedAt: null
     },
-    select: { id: true }
+    select: { id: true, programId: true }
   });
 
   const ids = candidatesToClean.map(c => c.id);
+  const pIds = Array.from(new Set(candidatesToClean.map(c => c.programId)));
 
   await prisma.candidate.updateMany({
     where: { id: { in: ids } },
@@ -863,6 +887,10 @@ export async function performPIICleanup() {
       deletedAt: new Date()
     }
   });
+
+  for(const pid of pIds) {
+    await invalidateCache(`control-tower:${pid}`);
+  }
 
   return { cleaned: ids.length };
 }

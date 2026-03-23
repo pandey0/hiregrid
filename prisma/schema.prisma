@@ -100,6 +100,7 @@ model OrganizationMember {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
+  @@index([organizationId])
 }
 
 model OrganizationInvite {
@@ -138,6 +139,9 @@ model Program {
   candidates   Candidate[]
   agencies     Agency[]
   members      ProgramMember[]
+
+  @@index([organizationId])
+  @@index([deletedAt])
 }
 
 model ProgramMember {
@@ -174,6 +178,9 @@ model Round {
   panelists        ProgramPanelist[]
   bookings         Booking[]
   activeCandidates Candidate[]       @relation("ActiveRound")
+
+  @@index([programId])
+  @@index([deletedAt])
 }
 
 enum RoundType {
@@ -203,6 +210,11 @@ model ProgramPanelist {
   round    Round     @relation(fields: [roundId], references: [id])
   user     User?     @relation(fields: [userId], references: [id])
   bookings Booking[]
+
+  @@index([programId])
+  @@index([roundId])
+  @@index([deletedAt])
+  @@index([externalEmail])
 }
 
 // ─── AGENCIES ──────────────────────────────────────────────────────────────────
@@ -221,6 +233,8 @@ model Agency {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   program      Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
   candidates   Candidate[]
+
+  @@index([programId])
 }
 
 // ─── CANDIDATE PIPELINE (Demand) ───────────────────────────────────────────────
@@ -258,6 +272,11 @@ model Candidate {
   bookings     Booking[]
 
   @@unique([programId, email])
+  @@index([status])
+  @@index([programId])
+  @@index([organizationId])
+  @@index([deletedAt])
+  @@index([createdAt])
 }
 
 enum CandidateSource {
@@ -298,6 +317,12 @@ model Booking {
   candidate       Candidate       @relation(fields: [candidateId], references: [id])
   programPanelist ProgramPanelist @relation(fields: [programPanelistId], references: [id])
   round           Round           @relation(fields: [roundId], references: [id])
+
+  @@index([status])
+  @@index([fulfillmentStatus])
+  @@index([slotStart])
+  @@index([candidateId])
+  @@index([programPanelistId])
 }
 
 enum FulfillmentStatus {

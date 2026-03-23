@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { generateToken } from "@/lib/tokens";
 import { sendPanelistInvite } from "@/lib/mail";
 import { checkProgramAccess } from "@/lib/permissions";
+import { invalidateCache } from "@/lib/redis";
 
 async function getOrgMembership(userId: string) {
   return prisma.organizationMember.findFirst({ where: { userId } });
@@ -75,6 +76,7 @@ export async function invitePanelist(formData: FormData) {
     magicLink,
   });
 
+  await invalidateCache(`control-tower:${programId}`);
   revalidatePath(`/programs/${programId}/panelists`);
   revalidatePath(`/programs/${programId}/rounds/${roundId}`);
 }
@@ -128,6 +130,8 @@ export async function saveAvailability(token: string, slots: { start: string; en
       magicLinkUsedAt: panelist.magicLinkUsedAt ?? new Date(),
     },
   });
+
+  await invalidateCache(`control-tower:${panelist.programId}`);
 }
 
 export async function resendPanelistLink(panelistId: number) {
@@ -218,6 +222,7 @@ export async function deletePanelist(panelistId: number, programId: number) {
     });
   });
 
+  await invalidateCache(`control-tower:${programId}`);
   revalidatePath(`/programs/${programId}/panelists`);
 }
 
@@ -256,5 +261,6 @@ export async function submitScorecard(
     });
   }
 
+  await invalidateCache(`control-tower:${panelist.programId}`);
   revalidatePath(`/availability/${token}`);
 }

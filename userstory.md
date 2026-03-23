@@ -516,11 +516,13 @@ Status: ✅ DONE
 * **Story 19.4: Round Panelist Roster** - As a Recruiter, I can see which panelists are assigned to this round and their individual contribution to the "supply" (free vs. booked slots).
 * **Story 19.5: Rubric & Focus Area Management** - As a Recruiter, I can manage the AI Rubric focus areas specifically within the context of the round view.
 * **Story 19.6: Unified Architectural Pipeline** - The dedicated candidate pipeline page must follow the typographic architectural design, providing a high-density triage environment.
+* **Story 19.7: Inline Talent Logistics** - The Program dashboard features a fully integrated candidate pipeline, reducing navigation depth for frequent triage actions.
+* **Story 19.8: De-cluttered Management Hub** - Redundant navigation links (like "Pipeline") are removed from sidebars when the data is already present in the primary view, maintaining architectural focus.
 
 ---
 
 ### 🔍 Implementation Status
-Status: ⏳ IN PROGRESS
+Status: ✅ DONE
 
 ---
 
