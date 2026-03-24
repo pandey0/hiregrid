@@ -46,8 +46,11 @@ type Candidate = {
   currentCompany?: string | null;
   atsScore?: number | null;
   resumeUrl: string | null;
+  resumeKey: string | null;
   activeRound?: { name: string } | null;
   source?: string;
+  nudgeCount: number;
+  lastNudgedAt: Date | null;
 };
 
 export default function CandidateTable({ 
@@ -240,10 +243,19 @@ export default function CandidateTable({
                     </div>
                   </TableCell>
                   <TableCell className="px-4">
-                    <ResumeCell candidateId={c.id} resumeUrl={c.resumeUrl} />
+                    <ResumeCell 
+                      candidateId={c.id} 
+                      resumeUrl={c.resumeUrl} 
+                      resumeKey={c.resumeKey} 
+                    />
                   </TableCell>
                   <TableCell className="px-8 text-right">
-                    <CandidateActions candidateId={c.id} status={c.status} rounds={rounds} />
+                    <CandidateActions 
+                      candidateId={c.id} 
+                      status={c.status} 
+                      rounds={rounds} 
+                      nudgeCount={c.nudgeCount}
+                    />
                   </TableCell>
                 </TableRow>
               );

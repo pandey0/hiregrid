@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { checkProgramAccess } from "@/lib/permissions";
 
 async function getOrgMembership(userId: string) {
   return prisma.organizationMember.findFirst({
@@ -26,7 +27,7 @@ export async function createProgram(formData: FormData) {
 
   if (!name) throw new Error("Program name is required");
 
-  let rounds: { name: string; durationMinutes: number; roundType: string; description?: string }[] = [];
+  let rounds: { name: string; durationMinutes: number; roundType: string; description?: string; assignmentLink?: string }[] = [];
   if (roundsRaw) {
     try {
       rounds = JSON.parse(roundsRaw);
@@ -46,11 +47,10 @@ export async function createProgram(formData: FormData) {
           description: r.description || null,
           roundNumber: i + 1,
           durationMinutes: r.durationMinutes,
-          roundType: (r.roundType as "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT") || "HUMAN_INTERVIEW",
+          roundType: (r.roundType as "HUMAN_INTERVIEW" | "ASSIGNMENT") || "HUMAN_INTERVIEW",
+          assignmentLink: r.assignmentLink || null,
         })),
       },
-      // Story 17.5: Only auto-assign LEAD if the creator is NOT an Org Admin
-      // Admins already have "God Mode" over all programs.
       members: membership.role !== "ADMIN" ? {
         create: {
           userId: session.user.id,
@@ -71,7 +71,6 @@ export async function updateProgram(programId: number, formData: FormData) {
   const membership = await getOrgMembership(session.user.id);
   if (!membership) throw new Error("No organization found");
 
-  // Story 16.2 & 16.4: Only organization ADMIN or program LEAD can update
   const isOrgAdmin = membership.role === "ADMIN";
   const isProgramLead = await prisma.programMember.findFirst({
     where: { programId, userId: session.user.id, role: "LEAD" }
@@ -83,6 +82,8 @@ export async function updateProgram(programId: number, formData: FormData) {
 
   const name = (formData.get("name") as string | null)?.trim();
   const description = (formData.get("description") as string | null)?.trim();
+  const inviteTemplate = (formData.get("inviteTemplate") as string | null)?.trim();
+  const confirmationTemplate = (formData.get("confirmationTemplate") as string | null)?.trim();
 
   if (!name) throw new Error("Program name is required");
 
@@ -91,6 +92,8 @@ export async function updateProgram(programId: number, formData: FormData) {
     data: {
       name,
       description: description || null,
+      inviteTemplate: inviteTemplate || undefined,
+      confirmationTemplate: confirmationTemplate || undefined,
     },
   });
 
@@ -105,7 +108,6 @@ export async function deleteProgram(programId: number) {
   const membership = await getOrgMembership(session.user.id);
   if (!membership) throw new Error("No organization found");
 
-  // Story 16.2 & 16.4: Only organization ADMIN or program LEAD can delete
   const isOrgAdmin = membership.role === "ADMIN";
   const isProgramLead = await prisma.programMember.findFirst({
     where: { programId, userId: session.user.id, role: "LEAD" }
@@ -115,7 +117,6 @@ export async function deleteProgram(programId: number) {
     throw new Error("Only organization administrators or the program lead can delete this program.");
   }
 
-  // Story 13.3: Cascade cancellation of upcoming bookings
   await prisma.booking.updateMany({
     where: {
       round: {
@@ -150,7 +151,6 @@ export async function updateRound(programId: number, roundId: number, data: { na
   const membership = await getOrgMembership(session.user.id);
   if (!membership) throw new Error("No organization found");
 
-  // Story 16.3: Only Admin or LEAD can modify structure
   const isOrgAdmin = membership.role === "ADMIN";
   const isProgramLead = await prisma.programMember.findFirst({
     where: { programId, userId: session.user.id, role: "LEAD" }
@@ -173,11 +173,10 @@ export async function updateRound(programId: number, roundId: number, data: { na
     });
 
     if (durationChanged) {
-      // Clear unbooked slots for all panelists in this round
       const panelists = await tx.programPanelist.findMany({ where: { roundId } });
       for (const p of panelists) {
         const slots = (p.availableSlots as SlotEntry[]) || [];
-        const filteredSlots = slots.filter(s => s.booked); // Keep only booked slots
+        const filteredSlots = slots.filter(s => s.booked); 
         await tx.programPanelist.update({
           where: { id: p.id },
           data: { availableSlots: filteredSlots }
@@ -206,4 +205,45 @@ export async function updateRoundFocusAreas(programId: number, roundId: number, 
   });
 
   revalidatePath(`/programs/${programId}`);
+}
+
+/**
+ * COMMAND PALETTE SEARCH
+ * Cross-program, organization-scoped searching.
+ */
+export async function globalSearch(query: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || query.length < 2) return { programs: [], candidates: [] };
+
+  const membership = await getOrgMembership(session.user.id);
+  if (!membership) return { programs: [], candidates: [] };
+
+  const [programs, candidates] = await Promise.all([
+    prisma.program.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        deletedAt: null,
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      select: { id: true, name: true },
+      take: 5,
+    }),
+    prisma.candidate.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        deletedAt: null,
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      select: { id: true, name: true, programId: true, email: true },
+      take: 5,
+    }),
+  ]);
+
+  return { programs, candidates };
 }

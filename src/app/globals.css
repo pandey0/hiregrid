@@ -118,7 +118,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-app-bg text-app-text-main antialiased selection:bg-app-accent/30 transition-colors duration-500;
+    @apply bg-app-bg text-app-text-main antialiased selection:bg-app-accent/30 transition-colors duration-500 overflow-x-hidden;
+    width: 100%;
+  }
+  html {
+    overflow-x: hidden;
+    width: 100%;
   }
 }
 
@@ -130,5 +135,9 @@
   
   .arch-mono-label {
     @apply font-mono text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-app-mono-bg text-app-mono-text transition-colors duration-500;
+  }
+
+  .page-container {
+    @apply w-full max-w-[1800px] mx-auto px-6 lg:px-12;
   }
 }

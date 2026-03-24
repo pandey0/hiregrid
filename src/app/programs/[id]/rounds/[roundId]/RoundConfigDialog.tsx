@@ -53,35 +53,42 @@ export default function RoundConfigDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="rounded-[40px] border-slate-100 p-10 max-w-md shadow-2xl">
-        <DialogHeader className="mb-8">
-          <span className="font-mono text-[10px] font-black text-blue-600 uppercase tracking-[0.4em] mb-4 block">
+      <DialogContent className="rounded-[40px] border-app-border p-10 max-w-md shadow-2xl bg-app-card w-[95vw]">
+        <DialogHeader className="mb-10 text-left">
+          <span className="font-mono text-[10px] font-black text-app-accent uppercase tracking-[0.4em] mb-4 block">
             System // Architecture
           </span>
-          <DialogTitle className="text-3xl font-black text-slate-900 tracking-tighter">Stage Config</DialogTitle>
-          <DialogDescription className="text-[14px] text-slate-500 font-medium">
+          <DialogTitle className="text-4xl font-black text-app-text-main tracking-tighter">Stage Config</DialogTitle>
+          <DialogDescription className="text-[15px] text-app-text-sub font-medium mt-2 leading-relaxed">
             Modify the constraints and identifying labels for this hiring stage.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-10">
           <div className="space-y-2">
-            <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Stage Label</Label>
-            <Input name="name" defaultValue={round.name} className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" required />
+            <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Stage Label</Label>
+            <Input name="name" defaultValue={round.name} className="h-12 rounded-2xl border-app-border bg-app-mono-bg/50 font-bold uppercase tracking-widest placeholder:text-app-text-sub/20" required />
           </div>
           
-          {round.roundType !== "ATS_SCREENING" && (
+          {round.roundType !== "AUTOMATED_SCREENING" && (
             <div className="space-y-2">
-              <Label className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Duration // Minutes</Label>
-              <Input name="duration" type="number" defaultValue={round.durationMinutes} className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 font-bold uppercase tracking-widest placeholder:text-slate-200" required />
-              <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-1">
-                Changing duration will clear existing unbooked slots for all interviewers in this stage.
+              <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Temporal Window // Minutes</Label>
+              <Input name="duration" type="number" defaultValue={round.durationMinutes} className="h-12 rounded-2xl border-app-border bg-app-mono-bg/50 font-bold uppercase tracking-widest placeholder:text-app-text-sub/20" required />
+              <p className="text-[10px] text-app-text-sub font-medium leading-relaxed px-1 opacity-60">
+                * Note: Changing duration will clear existing unbooked slots for all interviewers in this stage.
               </p>
             </div>
           )}
 
-          <div className="pt-6">
-            <Button type="submit" disabled={isPending} className="w-full bg-slate-900 hover:bg-blue-600 text-white font-black h-14 rounded-2xl uppercase tracking-widest text-[12px] shadow-xl shadow-slate-200 transition-all active:scale-95">
+          <div className="pt-6 flex items-center justify-between gap-6">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="text-[11px] font-black text-app-text-sub/40 uppercase tracking-widest hover:text-app-text-main transition-all">
+              [ CANCEL ]
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isPending} 
+              className="bg-app-text-main text-app-bg hover:bg-app-accent font-black h-14 px-10 rounded-2xl uppercase tracking-widest text-[12px] shadow-xl shadow-app-accent/10 transition-all border-none active:scale-95"
+            >
               {isPending ? "PROCESSING..." : "COMMIT CHANGES //"}
             </Button>
           </div>

@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Briefcase, ChevronRight, Save } from "lucide-react";
+import { Briefcase, ChevronRight, Save, Mail, MessageSquare, Info } from "lucide-react";
 
 type Program = {
   id: number;
   name: string;
   description: string | null;
+  inviteTemplate: string | null;
+  confirmationTemplate: string | null;
 };
 
 export default function EditProgramForm({ program }: { program: Program }) {
@@ -81,6 +83,70 @@ export default function EditProgramForm({ program }: { program: Program }) {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Email Templates Section */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-2.5 px-2">
+          <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+            <Mail className="w-4 h-4" />
+          </div>
+          <h2 className="text-[15px] font-bold text-slate-900 uppercase tracking-widest">Email Templates</h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* Panelist Invitation */}
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-sm rounded-[24px] shadow-sm overflow-hidden">
+            <CardContent className="p-8 space-y-6">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-purple-500" />
+                <h3 className="text-[14px] font-bold text-slate-800">Panelist Invitation</h3>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite-template" className="text-[13px] font-bold text-slate-700 ml-1">Template Content</Label>
+                <Textarea
+                  id="invite-template"
+                  name="inviteTemplate"
+                  defaultValue={program.inviteTemplate || ""}
+                  rows={4}
+                  className="resize-none rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[14px] font-medium p-4 leading-relaxed"
+                />
+                <div className="flex items-start gap-2 mt-2 px-1">
+                  <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium italic">
+                    Available variables: <code className="bg-slate-100 px-1 rounded text-purple-600">{"{{name}}"}</code>, <code className="bg-slate-100 px-1 rounded text-purple-600">{"{{programName}}"}</code>, <code className="bg-slate-100 px-1 rounded text-purple-600">{"{{roundName}}"}</code>, <code className="bg-slate-100 px-1 rounded text-purple-600">{"{{magicLink}}"}</code>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Booking Confirmation */}
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-sm rounded-[24px] shadow-sm overflow-hidden">
+            <CardContent className="p-8 space-y-6">
+              <div className="flex items-center gap-2">
+                <Save className="w-4 h-4 text-emerald-500" />
+                <h3 className="text-[14px] font-bold text-slate-800">Booking Confirmation</h3>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmation-template" className="text-[13px] font-bold text-slate-700 ml-1">Template Content</Label>
+                <Textarea
+                  id="confirmation-template"
+                  name="confirmationTemplate"
+                  defaultValue={program.confirmationTemplate || ""}
+                  rows={4}
+                  className="resize-none rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[14px] font-medium p-4 leading-relaxed"
+                />
+                <div className="flex items-start gap-2 mt-2 px-1">
+                  <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium italic">
+                    Available variables: <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{name}}"}</code>, <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{programName}}"}</code>, <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{roundName}}"}</code>, <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{startTime}}"}</code>, <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{endTime}}"}</code>, <code className="bg-slate-100 px-1 rounded text-emerald-600">{"{{meetingLink}}"}</code>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       {/* Info Card about Rounds */}

@@ -8,8 +8,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, ArrowRight, User, Mail, Lock } from "lucide-react";
+import { motion } from "framer-motion";
+import { User, Mail, Lock, ShieldCheck, Zap, ArrowRight, Cpu } from "lucide-react";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -47,116 +47,163 @@ const Register = () => {
         }
       );
     } catch {
-      toast.error("Something went wrong");
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="mb-10 text-center">
-          <Link href="/" className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white shadow-sm border border-slate-100 mb-6 hover:scale-105 transition-transform">
-            <Sparkles className="w-6 h-6 text-blue-600" />
+    <div className="min-h-screen bg-app-bg flex items-center justify-center px-6 py-12 relative overflow-hidden selection:bg-app-accent/30">
+      {/* Background Architecture */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-app-accent/5 blur-[140px] rounded-full opacity-50 translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 blur-[120px] rounded-full opacity-30 -translate-x-1/3 translate-y-1/3" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--app-border)_1px,_transparent_1px)] bg-[size:32px_32px] opacity-[0.1]" />
+      </div>
+
+      <div className="w-full max-w-xl relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="mb-12 text-center">
+          <Link href="/" className="inline-flex items-center justify-center w-16 h-16 rounded-[24px] bg-app-text-main text-app-bg shadow-2xl shadow-app-accent/10 mb-8 hover:scale-105 transition-transform group">
+            <span className="font-black text-2xl tracking-tighter group-hover:rotate-[-5deg] transition-transform">H</span>
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Create account</h1>
-          <p className="text-[15px] text-slate-500 mt-2 font-medium leading-relaxed">Join HireGrid to streamline your recruitment</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-3">
+              <span className="bg-app-accent/10 text-app-accent font-mono text-[9px] font-black px-2 py-0.5 rounded tracking-widest uppercase">Registry</span>
+              <div className="h-px w-8 bg-app-border" />
+              <span className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-[0.3em]">System // Initialization</span>
+            </div>
+            <h1 className="text-5xl font-black tracking-tighter text-app-text-main uppercase">Create <span className="text-app-accent">Account</span>.</h1>
+            <p className="text-[15px] text-app-text-sub font-medium italic opacity-60 text-center mx-auto max-w-sm">Join HireGrid to manage and scale your hiring supply chain.</p>
+          </div>
         </div>
 
-        <Card className="border-slate-200/60 bg-white shadow-xl shadow-slate-200/40 rounded-[32px] overflow-hidden">
-          <CardContent className="p-8 md:p-10">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-4">
-                <div className="space-y-2">
+        <div className="arch-card p-0 overflow-hidden border-app-border shadow-[0_0_80px_-15px_rgba(0,0,0,0.3)] bg-app-card">
+          {/* Tactical Header */}
+          <div className="p-8 bg-app-text-main text-app-bg relative overflow-hidden border-b border-app-accent/20">
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none" />
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-left">
+                <div className="w-10 h-10 rounded-xl bg-app-accent/20 flex items-center justify-center">
+                  <Cpu className="w-5 h-5 text-app-accent" />
+                </div>
+                <div>
+                  <p className="font-black uppercase tracking-widest text-[10px]">Onboarding Protocol</p>
+                  <p className="text-[9px] font-mono font-bold text-app-bg/40 uppercase mt-0.5">Primary Administrative Access</p>
+                </div>
+              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-app-accent shadow-[0_0_15px_rgba(var(--app-accent),0.6)]" />
+            </div>
+          </div>
+
+          <div className="p-10 md:p-12 bg-white dark:bg-app-card relative">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--app-border)_1px,_transparent_1px)] bg-[size:24px_24px] opacity-[0.15] pointer-events-none" />
+            
+            <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3 group/field">
                   <div className="flex items-center justify-between mb-1 px-1">
-                    <Label htmlFor="name" className="text-[13px] font-bold text-slate-700">Full Name</Label>
-                    <User className="w-3.5 h-3.5 text-slate-300" />
+                    <Label htmlFor="name" className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-widest group-focus-within/field:text-app-accent transition-colors">Full Name *</Label>
+                    <User className="w-3.5 h-3.5 text-app-text-sub/20 group-focus-within/field:text-app-accent transition-colors" />
                   </div>
-                  <Input
-                    id="name"
-                    type="text"
-                    autoComplete="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="Jane Smith"
-                    className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[15px] font-medium placeholder:text-slate-400"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="name"
+                      type="text"
+                      autoComplete="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      placeholder="E.G. JANE SMITH"
+                      className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white focus:ring-4 focus:ring-app-accent/5 transition-all font-black uppercase tracking-tight text-[13px] shadow-inner placeholder:text-app-text-sub/20"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3 group/field">
                   <div className="flex items-center justify-between mb-1 px-1">
-                    <Label htmlFor="email" className="text-[13px] font-bold text-slate-700">Email Address</Label>
-                    <Mail className="w-3.5 h-3.5 text-slate-300" />
+                    <Label htmlFor="email" className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-widest group-focus-within/field:text-app-accent transition-colors">Email Address *</Label>
+                    <Mail className="w-3.5 h-3.5 text-app-text-sub/20 group-focus-within/field:text-app-accent transition-colors" />
                   </div>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="you@company.com"
-                    className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[15px] font-medium placeholder:text-slate-400"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="YOU@COMPANY.COM"
+                      className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white focus:ring-4 focus:ring-app-accent/5 transition-all font-black uppercase tracking-tight text-[13px] shadow-inner placeholder:text-app-text-sub/20"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3 group/field">
                   <div className="flex items-center justify-between mb-1 px-1">
-                    <Label htmlFor="password" className="text-[13px] font-bold text-slate-700">Password</Label>
-                    <Lock className="w-3.5 h-3.5 text-slate-300" />
+                    <Label htmlFor="password" className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-widest group-focus-within/field:text-app-accent transition-colors">Password *</Label>
+                    <Lock className="w-3.5 h-3.5 text-app-text-sub/20 group-focus-within/field:text-app-accent transition-colors" />
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder="8+ characters"
-                    className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[15px] font-medium placeholder:text-slate-400"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="8+ CHARACTERS"
+                      className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white focus:ring-4 focus:ring-app-accent/5 transition-all font-black uppercase tracking-tight text-[13px] shadow-inner placeholder:text-app-text-sub/20"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3 group/field">
                   <div className="flex items-center justify-between mb-1 px-1">
-                    <Label htmlFor="confirm" className="text-[13px] font-bold text-slate-700">Confirm Password</Label>
-                    <Lock className="w-3.5 h-3.5 text-slate-300" />
+                    <Label htmlFor="confirm" className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-widest group-focus-within/field:text-app-accent transition-colors">Confirm Password *</Label>
+                    <Lock className="w-3.5 h-3.5 text-app-text-sub/20 group-focus-within/field:text-app-accent transition-colors" />
                   </div>
-                  <Input
-                    id="confirm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    className="h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all text-[15px] font-medium placeholder:text-slate-400"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirm"
+                      type="password"
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white focus:ring-4 focus:ring-app-accent/5 transition-all font-black uppercase tracking-tight text-[13px] shadow-inner placeholder:text-app-text-sub/20"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-6">
                 <Button 
                   type="submit" 
                   disabled={isLoading} 
-                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200/50 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="w-full h-16 bg-app-text-main text-app-bg hover:bg-app-accent font-black uppercase tracking-[0.2em] text-[12px] shadow-2xl shadow-app-accent/20 rounded-2xl transition-all active:scale-95 border-none group"
                 >
-                  {isLoading ? "Creating account..." : "Create account"}
-                  {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
+                  {isLoading ? "PROVISIONING..." : "Create Account //"}
+                  {!isLoading && <Zap className="w-4 h-4 ml-3 group-hover:scale-110 transition-transform" />}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <p className="text-center text-[14px] text-slate-500 mt-8 font-medium">
-          Already have an account?{" "}
-          <Link href="/sign-in" className="text-blue-600 hover:text-blue-700 font-bold ml-1">
-            Sign in
-          </Link>
-        </p>
+        <div className="mt-12 flex flex-col items-center gap-6">
+          <p className="text-center text-[11px] font-black text-app-text-sub/40 uppercase tracking-[0.3em]">
+            Already have an account?{" "}
+            <Link href="/sign-in" className="text-app-accent hover:underline ml-2 transition-all">
+              Sign in //
+            </Link>
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/20" />
+            <span className="font-mono text-[8px] font-bold text-app-text-sub/30 uppercase tracking-widest">Protocol Registry Operational</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -61,6 +61,13 @@ Status: ✅ DONE
 ---
 
 * **Story 1.6: Program-Specific Staffing** - As a Recruiter, I can be assigned to multiple programs with different roles (Lead or HR), ensuring granular visibility and control.
+
+* **Story 1.7: Custom Email Templates** - As a Recruiter, I can customize the email templates for panelist invitations and candidate booking confirmations at the Program level, ensuring consistent branding and tone.
+---
+
+### 🔍 Implementation Status
+Status: ⏳ IN PROGRESS
+
 ---
 
 ### 🔍 Implementation Status
@@ -154,11 +161,11 @@ Status: ✅ DONE
 
 ---
 
-* **Story 4.3: One-Click Nudges** - As a Recruiter, I can click a button to re-send Magic Links to panelists who have provided 0 hours of availability.
+* **Story 4.3: One-Click Nudges** - As a Recruiter, I can click a button to re-send Magic Links to panelists who have provided 0 hours of availability. The system tracks the number of nudges sent and the last nudge date for both panelists and candidates to support escalation workflows.
 ---
 
-### 🔧 Implementation Update
-Status: ✅ FIXED
+### 🔍 Implementation Status
+Status: ✅ DONE (With Persistent Tracking)
 
 ---
 
@@ -232,7 +239,7 @@ Status: ✅ FIXED
 - Organization Admin Tokens: ✅ (Retrieved and refreshed automatically)
 
 ### 🧱 Changes Made
-- Backend: Created `src/lib/google.ts` for API handling. Overhauled `src/lib/mcp.ts` with Vercel AI SDK and GPT-4o.
+- Backend: Created `src/lib/google.ts` for API handling. Overhauled `src/lib/mcp.ts` with Vercel AI SDK and Gemini 1.5 Flash.
 - Frontend: Added "Connect Google Calendar" to Team Settings.
 - Database: Using `Account` table for token storage.
 - Integrations: Google Calendar API, Vercel AI SDK.

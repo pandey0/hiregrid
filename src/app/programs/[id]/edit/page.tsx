@@ -37,35 +37,58 @@ export default async function EditProgramPage({ params }: { params: Promise<{ id
   if (!program) notFound();
 
   return (
-    <div className="max-w-4xl mx-auto px-6 lg:px-10 py-12">
-      <div className="mb-12">
-        <Breadcrumb className="mb-6">
+    <div className="page-container pb-20">
+      {/* Background Decorative Element */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-app-accent/5 blur-[140px] rounded-full opacity-50 translate-x-1/2 -translate-y-1/2" />
+      </div>
+
+      <div className="mb-20">
+        <Breadcrumb className="mb-8">
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/dashboard" className="text-slate-400 hover:text-slate-900 font-medium transition-colors">Dashboard</Link>
+                <Link href="/dashboard" className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-sub hover:text-app-accent transition-colors">
+                  Dashboard //
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator />
+            <BreadcrumbSeparator className="text-app-border" />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/programs/${id}`} className="text-slate-400 hover:text-slate-900 font-medium transition-colors">{program.name}</Link>
+                <Link href={`/programs/${id}`} className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-sub hover:text-app-accent transition-colors">
+                  {program.name} //
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator />
+            <BreadcrumbSeparator className="text-app-border" />
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-slate-900 font-bold">Edit Details</BreadcrumbPage>
+              <BreadcrumbPage className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-main">
+                Architecture Tuning
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Edit Program</h1>
-        <p className="text-[15px] text-slate-500 mt-2 font-medium max-w-2xl leading-relaxed">
-          Update the name and description of your hiring program.
-        </p>
+        <header className="flex items-end justify-start gap-12 text-left">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="arch-mono-label px-3 py-1">System Configuration</span>
+              <span className="text-[10px] font-mono font-bold text-app-text-sub uppercase tracking-widest">
+                Resource Optimization
+              </span>
+            </div>
+            <h1 className="text-7xl font-black text-app-text-main tracking-tighter leading-[0.85] mb-6">Edit <span className="text-app-accent">Sequence</span>.</h1>
+            <p className="text-xl font-medium text-app-text-sub leading-relaxed max-w-xl italic">
+              Update the identity and operational templates of your hiring program.
+            </p>
+          </div>
+        </header>
       </div>
       
-      <EditProgramForm program={program} />
+      <div className="max-w-5xl text-left">
+        <EditProgramForm program={program} />
+      </div>
     </div>
   );
 }

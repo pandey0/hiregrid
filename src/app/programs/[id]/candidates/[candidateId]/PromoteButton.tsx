@@ -3,8 +3,7 @@
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { promoteCandidate } from "@/actions/candidates";
-import { toast } from "sonner";
-import { ArrowUpCircle } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 export default function PromoteButton({ 
   candidateId, 
@@ -18,8 +17,10 @@ export default function PromoteButton({
   const handlePromote = () => {
     startTransition(async () => {
       try {
-        await promoteCandidate(candidateId);
-        toast.success(`Candidate promoted to ${nextRoundName}`);
+        const result = await promoteCandidate(candidateId);
+        toast.success(`Candidate promoted to ${nextRoundName}`, { 
+          traceId: result?.traceId 
+        });
       } catch (err: unknown) {
         const error = err as Error;
         toast.error(error.message || "Failed to promote candidate");
@@ -31,10 +32,9 @@ export default function PromoteButton({
     <Button 
       onClick={handlePromote} 
       disabled={isPending}
-      className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200/50 rounded-xl h-11 px-6 font-bold transition-all active:scale-[0.98]"
+      className="h-12 px-8 rounded-2xl bg-app-text-main text-app-bg hover:bg-app-accent font-black transition-all uppercase tracking-widest text-[11px] shadow-xl shadow-app-accent/10 border-none active:scale-[0.98]"
     >
-      {isPending ? "Promoting..." : `Promote to ${nextRoundName}`}
-      <ArrowUpCircle className="w-4 h-4 ml-2" />
+      {isPending ? "OPERATING //" : `Promote to ${nextRoundName} //`}
     </Button>
   );
 }

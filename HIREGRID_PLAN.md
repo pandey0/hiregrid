@@ -232,7 +232,7 @@ Program: "Senior Frontend Engineer Hiring Drive"
 | "God Mode" — recruiter manages panelist slots | Medium | Bottleneck resolution |
 | One-click reminder email | Low | Panelist nudge |
 | Resume / CSV upload | Medium | Demand side |
-| AI ATS scoring (OpenAI) | Medium | Candidate shortlisting |
+| AI ATS scoring (Gemini) | Medium | Candidate shortlisting |
 | Candidate Inbox (data-dense list view) | Medium | Demand side |
 | Bulk shortlist action | Medium | Demand side |
 | **`/book/[token]`** — candidate self-booking | High | Demand ↔ Supply match |
@@ -437,7 +437,7 @@ These are blocking everything:
 
 - [ ] **6a** Install UploadThing, add resume upload endpoint
 - [ ] **6b** Manual add + CSV bulk upload → create `Candidate` records as DRAFT
-- [ ] **6c** AI scoring: extract PDF text → GPT-4o structured output → save `atsScore`, `atsReason`
+- [ ] **6c** AI scoring: extract PDF text → Gemini structured output → save `atsScore`, `atsReason`
 - [ ] **6d** Candidate Inbox — list view, ATS score badge, status filter, bulk select
 - [ ] **6e** "Shortlist & Invite" bulk action → set ACTIVE, assign `activeRoundId`, generate `bookingToken`, send email
 
@@ -493,7 +493,7 @@ npm install resend
 npm install uploadthing @uploadthing/react
 
 # AI resume scoring
-npm install openai
+npm install @ai-sdk/google
 
 # PDF text extraction for AI scoring
 npm install pdf-parse @types/pdf-parse

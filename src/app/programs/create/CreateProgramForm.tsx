@@ -21,8 +21,9 @@ import { cn } from "@/lib/utils";
 type Round = {
   name: string;
   durationMinutes: number;
-  roundType: "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT";
+  roundType: "HUMAN_INTERVIEW" | "ASSIGNMENT";
   description: string;
+  assignmentLink: string;
 };
 
 const defaultRound = (): Round => ({
@@ -30,10 +31,10 @@ const defaultRound = (): Round => ({
   durationMinutes: 60,
   roundType: "HUMAN_INTERVIEW",
   description: "",
+  assignmentLink: "",
 });
 
 const roundTypeLabels = {
-  ATS_SCREENING: "ATS // Automated",
   HUMAN_INTERVIEW: "Human Interview",
   ASSIGNMENT: "Offline Assignment",
 };
@@ -84,53 +85,53 @@ export default function CreateProgramForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-20 animate-in fade-in slide-in-from-bottom-4 duration-700 transition-colors duration-500">
+    <form onSubmit={handleSubmit} className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700 transition-colors duration-500">
       {/* Program Details Section */}
-      <section className="space-y-10">
+      <section className="space-y-8">
         <div className="flex items-center gap-6 px-1">
-          <h2 className="text-[14px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.4em] whitespace-nowrap">
+          <h2 className="text-[13px] font-bold text-app-text-main uppercase tracking-[0.4em] whitespace-nowrap">
             Program Identity
           </h2>
-          <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-100 dark:from-slate-800 to-transparent" />
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-app-border to-transparent" />
         </div>
         
-        <div className="p-10 rounded-[40px] bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 shadow-sm space-y-8">
+        <div className="arch-card p-10 space-y-8">
           <div className="space-y-2">
-            <Label htmlFor="prog-name" className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Architectural Label</Label>
+            <Label htmlFor="prog-name" className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Architectural Label</Label>
             <Input
               id="prog-name"
               name="name"
               required
               placeholder="E.G. SENIOR ENGINEERING DRIVE"
-              className="h-14 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 transition-all text-lg font-black uppercase tracking-tighter placeholder:text-slate-200 dark:placeholder:text-slate-700 text-slate-900 dark:text-white"
+              className="h-14 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white transition-all text-lg font-black uppercase tracking-tighter placeholder:text-app-text-sub/20 text-app-text-main"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="prog-desc" className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Contextual Description</Label>
+            <Label htmlFor="prog-desc" className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Contextual Description</Label>
             <Textarea
               id="prog-desc"
               name="description"
               rows={4}
               placeholder="DEFINE GOALS AND OBJECTIVES..."
-              className="resize-none rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 transition-all font-bold uppercase tracking-widest placeholder:text-slate-200 dark:placeholder:text-slate-700 text-slate-900 dark:text-white p-6"
+              className="resize-none rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white transition-all font-bold uppercase tracking-widest placeholder:text-app-text-sub/20 text-app-text-main p-6"
             />
           </div>
         </div>
       </section>
 
       {/* Rounds Section */}
-      <section className="space-y-10">
+      <section className="space-y-8">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-6 flex-1">
-            <h2 className="text-[14px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.4em] whitespace-nowrap">
+            <h2 className="text-[13px] font-bold text-app-text-main uppercase tracking-[0.4em] whitespace-nowrap">
               Hiring Sequence
             </h2>
-            <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-100 dark:from-slate-800 to-transparent" />
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-app-border to-transparent" />
           </div>
           <button 
             type="button" 
             onClick={addRound} 
-            className="ml-8 text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline"
+            className="ml-8 text-[11px] font-black text-app-accent uppercase tracking-widest hover:underline"
           >
             + ADD STAGE //
           </button>
@@ -146,19 +147,19 @@ export default function CreateProgramForm() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="group relative"
               >
-                <div className="p-10 rounded-[40px] bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 shadow-sm group-focus-within:border-blue-200 dark:group-focus-within:border-blue-900 transition-all duration-500">
+                <div className="arch-card p-10 group-focus-within:border-app-accent/40 transition-all duration-500">
                   <div className="flex items-center justify-between mb-10">
                     <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center text-sm font-black shadow-xl shadow-slate-200 dark:shadow-none transition-colors">
+                      <div className="w-12 h-12 rounded-2xl bg-app-text-main text-app-bg flex items-center justify-center text-sm font-black shadow-xl shadow-app-accent/10 transition-colors">
                         {(index + 1).toString().padStart(2, '0')}
                       </div>
-                      <span className="font-mono text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.3em]">Configure Architecture</span>
+                      <span className="font-mono text-[11px] font-black text-app-text-main uppercase tracking-[0.3em]">Configure Architecture</span>
                     </div>
                     {rounds.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeRound(index)}
-                        className="text-[10px] font-black text-rose-600/30 dark:text-rose-500/30 hover:text-rose-600 dark:hover:text-rose-400 uppercase tracking-widest transition-colors"
+                        className="text-[10px] font-black text-rose-600/40 hover:text-rose-600 uppercase tracking-widest transition-colors"
                       >
                         [ DISCONNECT ]
                       </button>
@@ -167,24 +168,24 @@ export default function CreateProgramForm() {
 
                   <div className="grid md:grid-cols-2 gap-10">
                     <div className="space-y-2">
-                      <Label className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Stage Label</Label>
+                      <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Stage Label</Label>
                       <Input
                         value={round.name}
                         onChange={(e) => updateRound(index, "name", e.target.value)}
                         placeholder="E.G. TECHNICAL DEEP DIVE"
-                        className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 transition-all font-bold uppercase tracking-widest text-slate-900 dark:text-white"
+                        className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white transition-all font-bold uppercase tracking-widest text-app-text-main"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Execution Type</Label>
+                      <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Execution Type</Label>
                       <Select
                         value={round.roundType}
-                        onValueChange={(v) => updateRound(index, "roundType", v as "ATS_SCREENING" | "HUMAN_INTERVIEW" | "ASSIGNMENT")}
+                        onValueChange={(v) => updateRound(index, "roundType", v as "HUMAN_INTERVIEW" | "ASSIGNMENT")}
                       >
-                        <SelectTrigger className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 font-bold uppercase tracking-widest text-slate-900 dark:text-white">
+                        <SelectTrigger className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 font-bold uppercase tracking-widest text-app-text-main">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-100 dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+                        <SelectContent className="rounded-2xl border-app-border bg-app-card shadow-2xl">
                           {Object.entries(roundTypeLabels).map(([value, label]) => (
                             <SelectItem key={value} value={value} className="py-3 px-4 font-bold text-[12px] uppercase tracking-wider">
                               {label}
@@ -195,22 +196,38 @@ export default function CreateProgramForm() {
                     </div>
                   </div>
 
-                  {round.roundType !== "ATS_SCREENING" && (
+                  {round.roundType === "ASSIGNMENT" && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="pt-10 mt-10 border-t border-app-border/50 space-y-2 px-1"
+                    >
+                      <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Assignment Resource Link</Label>
+                      <Input
+                        value={round.assignmentLink}
+                        onChange={(e) => updateRound(index, "assignmentLink", e.target.value)}
+                        placeholder="HTTPS://GITHUB.COM/REPOSITORY/ASSIGNMENT-TEMPLATE"
+                        className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white transition-all font-bold uppercase tracking-widest text-app-text-main"
+                      />
+                    </motion.div>
+                  )}
+
+                  {round.roundType === "HUMAN_INTERVIEW" && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="grid md:grid-cols-2 gap-10 pt-10 mt-10 border-t border-slate-50 dark:border-slate-800"
+                      className="grid md:grid-cols-2 gap-10 pt-10 mt-10 border-t border-app-border/50"
                     >
                       <div className="space-y-2">
-                        <Label className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Temporal Window // Minutes</Label>
+                        <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Temporal Window // Minutes</Label>
                         <Select
                           value={String(round.durationMinutes)}
                           onValueChange={(v) => updateRound(index, "durationMinutes", parseInt(v))}
                         >
-                          <SelectTrigger className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 font-bold uppercase tracking-widest text-slate-900 dark:text-white">
+                          <SelectTrigger className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 font-bold uppercase tracking-widest text-app-text-main">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-slate-100 dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+                          <SelectContent className="rounded-2xl border-app-border bg-app-card shadow-2xl">
                             {[30, 45, 60, 75, 90, 120].map((m) => (
                               <SelectItem key={m} value={String(m)} className="py-3 px-4 font-bold text-[12px] uppercase tracking-wider">
                                 {m} MINUTES //
@@ -220,12 +237,12 @@ export default function CreateProgramForm() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="font-mono text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Operational Notes</Label>
+                        <Label className="font-mono text-[10px] font-bold text-app-text-sub uppercase tracking-widest ml-1">Operational Notes</Label>
                         <Input
                           value={round.description}
                           onChange={(e) => updateRound(index, "description", e.target.value)}
                           placeholder="GUIDELINES FOR INTERVIEWERS..."
-                          className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 transition-all font-bold uppercase tracking-widest text-slate-900 dark:text-white"
+                          className="h-12 rounded-2xl border-app-border bg-app-mono-bg/5 focus:bg-white transition-all font-bold uppercase tracking-widest text-app-text-main"
                         />
                       </div>
                     </motion.div>
@@ -238,18 +255,18 @@ export default function CreateProgramForm() {
       </section>
 
       {/* Footer Actions */}
-      <div className="flex items-center justify-between pt-12 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex items-center justify-between pt-12 border-t border-app-border/50">
         <button 
           type="button" 
           onClick={() => router.back()} 
-          className="text-[11px] font-black text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white uppercase tracking-widest transition-colors"
+          className="text-[11px] font-black text-app-text-sub/40 hover:text-app-text-main uppercase tracking-widest transition-colors"
         >
           [ ABORT SEQUENCE ]
         </button>
         <Button 
           type="submit" 
           disabled={isPending}
-          className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-blue-600 dark:hover:bg-blue-400 text-white font-black h-16 px-12 rounded-2xl uppercase tracking-widest text-[13px] shadow-2xl shadow-slate-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 border-none"
+          className="bg-app-text-main text-app-bg hover:bg-app-accent font-black h-16 px-12 rounded-2xl uppercase tracking-widest text-[13px] shadow-2xl shadow-app-accent/10 transition-all active:scale-95 disabled:opacity-50 border-none"
         >
           {isPending ? "DEPLOYING ARCHITECTURE..." : "COMMENCE DEPLOYMENT //"}
         </Button>

@@ -9,7 +9,8 @@ AI-powered hiring supply chain platform. Balances panelist time slots (supply) a
 - **Auth**: Better Auth with Prisma adapter (email + password). Secret: `BETTER_AUTH_SECRET` env var.
 - **UI**: Tailwind CSS v4, clean zinc/white aesthetic — no animations, no icons
 - **Email**: Resend (pending integration)
-- **AI scoring**: OpenAI (pending integration)
+- **AI scoring**: Gemini 2.0 Flash (Vercel AI SDK)
+- **File upload**: UploadThing (PDF resumes)
 - **Excel parsing**: `xlsx` package (server-side)
 - **Package manager**: npm
 

@@ -1,36 +1,28 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
+import { requireAuth } from "@/lib/auth-context";
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
-
-  const membership = await prisma.organizationMember.findFirst({
-    where: { userId: session.user.id },
-    include: { organization: true },
-  });
-  if (!membership) redirect("/onboarding");
+  // performance: Using cached auth context (0 DB cost if already called in layout)
+  const { session, membership } = await requireAuth();
 
   const programWhereClause: any = {
-    organizationId: membership.organizationId,
+    organizationId: membership!.organizationId,
     deletedAt: null,
   };
 
-  if (membership.role !== "ADMIN") {
+  if (membership!.role !== "ADMIN") {
     programWhereClause.members = {
       some: { userId: session.user.id }
     };
   }
 
   const countFilters: any = {
-    organizationId: membership.organizationId,
+    organizationId: membership!.organizationId,
     deletedAt: null,
   };
 
-  if (membership.role !== "ADMIN") {
+  if (membership!.role !== "ADMIN") {
     countFilters.program = {
       members: { some: { userId: session.user.id } }
     };
@@ -62,7 +54,7 @@ export default async function DashboardPage() {
 
   const completedBookings = await prisma.booking.count({
     where: {
-      candidate: { organizationId: membership.organizationId },
+      candidate: { organizationId: membership!.organizationId },
       status: "COMPLETED",
     },
   });

@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,6 +20,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
+import { Users, ShieldCheck, Zap, Globe, ArrowUpRight } from "lucide-react";
 import InvitePanelistForm from "./InvitePanelistForm";
 import CopyButton from "./CopyButton";
 import NudgeButton from "./NudgeButton";
@@ -33,6 +32,8 @@ type Panelist = {
   externalEmail: string | null;
   magicLinkToken: string;
   availableSlots: any;
+  nudgeCount: number;
+  lastNudgedAt: Date | null;
   round: { name: string };
 };
 
@@ -55,196 +56,216 @@ export default function PanelistsClient({
   }
 
   return (
-    <div className="w-full px-8 lg:px-16 py-12 relative transition-colors duration-500">
-      <div className="max-w-[1600px] mx-auto">
-        <div className="mb-12">
-          <Breadcrumb className="mb-8">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/dashboard" className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    Dashboard //
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="text-slate-300 dark:text-slate-700" />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href={`/programs/${programId}`} className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    {program.name} //
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="text-slate-300 dark:text-slate-700" />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-900 dark:text-white">
-                  Interviewer Pool
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+    <div className="page-container pb-20">
+      {/* Background Decorative Element */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-app-accent/5 blur-[140px] rounded-full opacity-50 translate-x-1/2 -translate-y-1/2" />
+      </div>
 
+      {/* Navigation & Header */}
+      <div className="mb-20">
+        <Breadcrumb className="mb-8">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard" className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-sub hover:text-app-accent transition-colors">
+                  Dashboard //
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-app-border" />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/programs/${programId}`} className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-sub hover:text-app-accent transition-colors">
+                  Sequence Overview //
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-app-border" />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-[11px] font-mono font-bold uppercase tracking-widest text-app-text-main">
+                Interviewer Pool
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <header className="flex items-end justify-start gap-12 text-left">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
+            className="flex-1"
           >
-            <span className="font-mono text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em] mb-3 block">
-              Supply Management //
-            </span>
-            <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">Interviewers</h1>
-            <p className="text-[16px] text-slate-500 dark:text-slate-400 mt-4 font-medium max-w-2xl leading-relaxed">
-              Coordinating <span className="text-slate-900 dark:text-white font-bold">{panelists.length.toString().padStart(2, '0')} assigned specialists</span> for the {program.name} sequence.
+            <div className="flex items-center gap-3 mb-6">
+              <span className="arch-mono-label px-3 py-1">Supply Management</span>
+              <span className="text-[10px] font-mono font-bold text-app-text-sub uppercase tracking-widest">
+                Resource Deployment
+              </span>
+            </div>
+            <h1 className="text-7xl font-black text-app-text-main tracking-tighter leading-[0.85] mb-6">
+              Assigned <span className="text-app-accent">Specialists</span>.
+            </h1>
+            <p className="text-xl font-medium text-app-text-sub leading-relaxed max-w-xl italic">
+              Coordinating <span className="text-app-text-main font-black border-b-2 border-app-accent">{panelists.length} assigned specialists</span> for the {program.name} sequence.
             </p>
           </motion.div>
+        </header>
+      </div>
+
+      <div className="grid lg:grid-cols-12 gap-16">
+        <div className="lg:col-span-8 space-y-16">
+          {program.rounds.length === 0 ? (
+            <div className="arch-card border-dashed p-32 text-center bg-app-mono-bg/5">
+              <span className="font-mono text-[12px] font-black text-app-text-sub/40 uppercase tracking-[0.4em] block mb-4">[ ARCHITECTURE REQUIRED ]</span>
+              <p className="text-xl font-medium text-app-text-sub italic">Define hiring rounds first to begin interviewer deployment.</p>
+            </div>
+          ) : (
+            <>
+              <section className="space-y-10">
+                <div className="flex items-center gap-6">
+                  <h2 className="text-[13px] font-bold text-app-text-main uppercase tracking-[0.4em] whitespace-nowrap text-left">
+                    Deploy Interviewer
+                  </h2>
+                  <div className="h-[1px] flex-1 bg-gradient-to-r from-app-border to-transparent" />
+                </div>
+                <div className="arch-card p-10 bg-white dark:bg-app-card">
+                  <InvitePanelistForm programId={program.id} rounds={program.rounds} />
+                </div>
+              </section>
+
+              <section className="space-y-10">
+                <div className="flex items-center gap-6">
+                  <h2 className="text-[13px] font-bold text-app-text-main uppercase tracking-[0.4em] whitespace-nowrap text-left">
+                    Interviewer Roster
+                  </h2>
+                  <div className="h-[1px] flex-1 bg-gradient-to-r from-app-border to-transparent" />
+                </div>
+
+                {panelists.length === 0 ? (
+                  <div className="arch-card border-dashed p-24 text-center bg-app-mono-bg/5">
+                    <p className="text-[14px] text-app-text-sub font-bold uppercase tracking-widest italic">Zero interviewers deployed</p>
+                  </div>
+                ) : (
+                  <div className="arch-card overflow-hidden bg-white dark:bg-app-card shadow-none">
+                    <Table>
+                      <TableHeader className="bg-app-mono-bg/5">
+                        <TableRow className="hover:bg-transparent border-app-border h-16">
+                          <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-app-text-sub px-8">Identity // Access</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-app-text-sub px-4">Stage</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-app-text-sub px-4">Availability</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-app-text-sub px-4 text-center">Magic Link</TableHead>
+                          <TableHead className="w-20 px-8 text-right"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {panelists.map((p, idx) => {
+                          const magicLink = `${baseUrl}/availability/${p.magicLinkToken}`;
+                          const slotCount = formatSlots(p.availableSlots);
+                          return (
+                            <motion.tr 
+                              key={p.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className="group transition-all duration-500 border-app-border h-24 hover:bg-app-accent/[0.02]"
+                            >
+                              <TableCell className="px-8 text-left">
+                                <div className="flex items-center gap-5">
+                                  <div className="w-12 h-12 rounded-2xl bg-app-text-main text-app-bg flex items-center justify-center font-black text-sm uppercase shrink-0 shadow-xl shadow-app-accent/5 transition-colors">
+                                    {(p.externalName || "P").charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-black text-app-text-main text-[16px] tracking-tight group-hover:text-app-accent transition-colors leading-none uppercase">{p.externalName || "Unnamed Interviewer"}</p>
+                                    <p className="font-mono text-[11px] font-bold text-app-text-sub mt-1.5 uppercase tracking-tighter">{p.externalEmail}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-4 text-left">
+                                <span className="arch-mono-label px-2 py-0.5">
+                                  {p.round.name}
+                                </span>
+                              </TableCell>
+                              <TableCell className="px-4 text-left">
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    "w-2 h-2 rounded-full",
+                                    slotCount > 0 ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-app-border"
+                                  )} />
+                                  <span className={cn(
+                                    "font-mono text-[11px] font-black uppercase tracking-widest",
+                                    slotCount > 0 ? "text-emerald-600" : "text-app-text-sub opacity-40"
+                                  )}>
+                                    {slotCount.toString().padStart(2, '0')} // SLOTS
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-4 text-center">
+                                <CopyButton value={magicLink} />
+                              </TableCell>
+                              <TableCell className="px-8 text-right">
+                                <div className="flex items-center justify-end gap-6">
+                                  <div className="flex flex-col items-end gap-1">
+                                    <NudgeButton panelistId={p.id} />
+                                    {p.nudgeCount > 0 && (
+                                      <span className="font-mono text-[9px] font-black text-app-text-sub uppercase tracking-tighter">
+                                        NUDGED {p.nudgeCount}X
+                                      </span>
+                                    )}
+                                  </div>
+                                  <form action={deletePanelist.bind(null, p.id, program.id)}>
+                                    <button
+                                      type="submit"
+                                      className="text-[10px] font-black text-rose-600/40 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                                    >
+                                      DISCONNECT //
+                                    </button>
+                                  </form>
+                                </div>
+                              </TableCell>
+                            </motion.tr>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-16">
-          <div className="lg:col-span-8 space-y-16">
-            {program.rounds.length === 0 ? (
-              <div className="p-32 rounded-[48px] border-2 border-dashed border-slate-100 dark:border-slate-800 text-center bg-slate-50/30 dark:bg-slate-900/20">
-                <span className="font-mono text-[12px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em] block mb-4">[ ARCHITECTURE REQUIRED ]</span>
-                <p className="text-[16px] text-slate-400 dark:text-slate-500 font-medium">Define hiring rounds first to begin interviewer deployment.</p>
-              </div>
-            ) : (
-              <>
-                <section className="space-y-10">
-                  <div className="flex items-center gap-6">
-                    <h2 className="text-[13px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.4em] whitespace-nowrap">
-                      Deploy Interviewer
-                    </h2>
-                    <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-100 dark:from-slate-800 to-transparent" />
-                  </div>
-                  <div className="p-10 rounded-[40px] bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-500">
-                    <InvitePanelistForm programId={program.id} rounds={program.rounds} />
-                  </div>
-                </section>
-
-                <section className="space-y-10">
-                  <div className="flex items-center gap-6">
-                    <h2 className="text-[13px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.4em] whitespace-nowrap">
-                      Interviewer Roster
-                    </h2>
-                    <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-100 dark:from-slate-800 to-transparent" />
-                  </div>
-
-                  {panelists.length === 0 ? (
-                    <div className="p-24 rounded-[40px] border-2 border-dashed border-slate-100 dark:border-slate-800 text-center bg-white dark:bg-slate-900/50">
-                      <p className="text-[14px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Zero interviewers deployed</p>
+        <div className="lg:col-span-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="sticky top-32"
+          >
+            <div className="arch-card bg-app-text-main text-app-bg p-10 relative overflow-hidden shadow-2xl transition-colors duration-500">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-app-accent/20 blur-[80px] -mr-24 -mt-24" />
+              <div className="relative z-10 text-left">
+                <span className="font-mono text-[10px] font-black text-app-accent uppercase tracking-[0.4em] block mb-6">Execution Strategy //</span>
+                <h3 className="text-2xl font-black tracking-tight mb-4 leading-tight">Headless Scheduling Logic</h3>
+                <p className="text-app-bg/60 text-[15px] font-medium leading-relaxed mb-10 italic">
+                  Interviewers utilize a secure, login-free interface to populate the hiring supply chain with availability.
+                </p>
+                <div className="space-y-6">
+                  {[
+                    { label: "Smart Slot Snapping", icon: Zap },
+                    { label: "Global Conflict Guard", icon: ShieldCheck },
+                    { label: "Zero-Login Submission", icon: Globe }
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-4">
+                      <div className="w-1.5 h-6 bg-app-accent rounded-full shrink-0" />
+                      <div>
+                        <p className="text-[13px] font-bold text-app-bg uppercase tracking-widest">{item.label}</p>
+                        <p className="text-[10px] font-mono text-app-bg/40 mt-1 uppercase">Automated Protocol Enabled</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="rounded-[40px] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-                      <Table>
-                        <TableHeader className="bg-slate-50/30 dark:bg-slate-900/50">
-                          <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800 h-16">
-                            <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-8">Identity // Access</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-4">Stage</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-4">Availability</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-4">Magic Link</TableHead>
-                            <TableHead className="w-20 px-8"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {panelists.map((p, idx) => {
-                            const magicLink = `${baseUrl}/availability/${p.magicLinkToken}`;
-                            const slotCount = formatSlots(p.availableSlots);
-                            return (
-                              <motion.tr 
-                                key={p.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                className="group transition-all duration-500 border-slate-50 dark:border-slate-800 h-24 hover:bg-slate-50/30 dark:hover:bg-slate-900/30"
-                              >
-                                <TableCell className="px-8">
-                                  <div className="flex items-center gap-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-black text-sm uppercase shrink-0 shadow-lg shadow-slate-100 dark:shadow-none transition-colors">
-                                      {(p.externalName || "P").charAt(0)}
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-900 dark:text-white text-[16px] tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-none">{p.externalName || "Unnamed Interviewer"}</p>
-                                      <p className="font-mono text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-tighter">{p.externalEmail}</p>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-4">
-                                  <span className="font-mono text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                                    {p.round.name}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="px-4">
-                                  <div className="flex items-center gap-2">
-                                    <div className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      slotCount > 0 ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-800"
-                                    )} />
-                                    <span className={cn(
-                                      "font-mono text-[11px] font-black uppercase tracking-widest",
-                                      slotCount > 0 ? "text-emerald-600 dark:text-emerald-500" : "text-slate-400 dark:text-slate-500"
-                                    )}>
-                                      {slotCount.toString().padStart(2, '0')} // SLOTS
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-4">
-                                  <CopyButton value={magicLink} />
-                                </TableCell>
-                                <TableCell className="px-8 text-right">
-                                  <div className="flex items-center justify-end gap-6">
-                                    <NudgeButton panelistId={p.id} />
-                                    <form action={deletePanelist.bind(null, p.id, program.id)}>
-                                      <button
-                                        type="submit"
-                                        className="text-[10px] font-black text-rose-600/40 dark:text-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400 uppercase tracking-widest transition-colors"
-                                      >
-                                        DISCONNECT //
-                                      </button>
-                                    </form>
-                                  </div>
-                                </TableCell>
-                              </motion.tr>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </section>
-              </>
-            )}
-          </div>
-
-          <div className="lg:col-span-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="bg-slate-900 dark:bg-slate-100 border-none rounded-[40px] p-10 text-white dark:text-slate-900 relative overflow-hidden shadow-2xl shadow-slate-200 dark:shadow-none transition-colors duration-500">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/20 dark:bg-blue-400/20 blur-[80px] -mr-24 -mt-24" />
-                <div className="relative z-10">
-                  <span className="font-mono text-[10px] font-black text-blue-400 dark:text-blue-600 uppercase tracking-[0.4em] block mb-6">Execution Strategy //</span>
-                  <h3 className="text-2xl font-black tracking-tight mb-4 leading-tight">Headless Scheduling Logic</h3>
-                  <p className="text-slate-400 dark:text-slate-500 text-[15px] font-medium leading-relaxed mb-10">
-                    Interviewers utilize a secure, login-free interface to populate the hiring supply chain with availability.
-                  </p>
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-1.5 h-6 bg-blue-600 dark:bg-blue-500 rounded-full shrink-0" />
-                      <p className="text-[13px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest">Smart Slot Snapping</p>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="w-1.5 h-6 bg-blue-600 dark:bg-blue-500 rounded-full shrink-0" />
-                      <p className="text-[13px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest">Global Conflict Guard</p>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="w-1.5 h-6 bg-blue-600 dark:bg-blue-500 rounded-full shrink-0" />
-                      <p className="text-[13px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest">Zero-Login Submission</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </Card>
-            </motion.div>
-          </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

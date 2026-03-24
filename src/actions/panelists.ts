@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { generateToken } from "@/lib/tokens";
-import { sendPanelistInvite } from "@/lib/mail";
+import { sendPanelistInvite, sendEmail } from "@/lib/mail";
 import { checkProgramAccess } from "@/lib/permissions";
 import { invalidateCache } from "@/lib/redis";
 
@@ -156,13 +156,38 @@ export async function resendPanelistLink(panelistId: number) {
   const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const magicLink = `${baseUrl}/availability/${panelist.magicLinkToken}`;
 
-  await sendPanelistInvite({
-    email: panelist.externalEmail!,
-    name: panelist.externalName || undefined,
-    programName: panelist.program.name,
-    roundName: panelist.round.name,
-    magicLink,
+  await prisma.programPanelist.update({
+    where: { id: panelistId },
+    data: {
+      nudgeCount: { increment: 1 },
+      lastNudgedAt: new Date(),
+    },
   });
+
+  const subject = `Reminder: Availability needed for ${panelist.program.name}`;
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #0f172a;">Hello ${panelist.externalName || "there"},</h1>
+      <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+        This is a friendly reminder to provide your availability for the <strong>${panelist.program.name}</strong> 
+        (round: <strong>${panelist.round.name}</strong>).
+      </p>
+      <div style="margin: 32px 0;">
+        <a href="${magicLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          Submit Availability
+        </a>
+      </div>
+    </div>
+  `;
+
+  await sendEmail({
+    to: panelist.externalEmail!,
+    subject,
+    html,
+    type: "REMINDER"
+  });
+
+  revalidatePath(`/programs/${panelist.programId}/panelists`);
 }
 
 export async function deletePanelist(panelistId: number, programId: number) {

@@ -129,6 +129,8 @@ model Program {
   name           String
   description    String?
   organizationId Int
+  inviteTemplate       String?   @default("Hello {{name}}, you are invited to join the {{programName}} program as a panelist for the {{roundName}} round. Please provide your availability here: {{magicLink}}")
+  confirmationTemplate String?   @default("Hi {{name}}, your interview for {{programName}} ({{roundName}}) has been scheduled for {{startTime}} to {{endTime}}. Meeting link: {{meetingLink}}")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -168,6 +170,7 @@ model Round {
   roundNumber     Int
   durationMinutes Int       @default(60)
   roundType       RoundType @default(HUMAN_INTERVIEW)
+  assignmentLink  String?
   focusAreas      Json?     @default("[]")
   programId       Int
   createdAt       DateTime  @default(now())
@@ -184,7 +187,6 @@ model Round {
 }
 
 enum RoundType {
-  ATS_SCREENING
   HUMAN_INTERVIEW
   ASSIGNMENT
 }
@@ -202,6 +204,8 @@ model ProgramPanelist {
   magicLinkTokenExp DateTime?
   magicLinkUsedAt DateTime?
   availableSlots  Json      @default("[]")
+  nudgeCount      Int       @default(0)
+  lastNudgedAt    DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -252,6 +256,7 @@ model Candidate {
   yearsExperience Int?
   notes           String?
   resumeUrl       String?
+  resumeKey       String?
   source          CandidateSource @default(DIRECT)
   agencyId        Int?
   atsScore        Float?
@@ -261,6 +266,8 @@ model Candidate {
   bookingToken    String?         @unique
   bookingTokenExp DateTime?
   bookingRoundId  Int?
+  nudgeCount      Int             @default(0)
+  lastNudgedAt    DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   deletedAt       DateTime?
@@ -317,12 +324,37 @@ model Booking {
   candidate       Candidate       @relation(fields: [candidateId], references: [id])
   programPanelist ProgramPanelist @relation(fields: [programPanelistId], references: [id])
   round           Round           @relation(fields: [roundId], references: [id])
+  emailLogs       EmailLog[]
 
   @@index([status])
   @@index([fulfillmentStatus])
   @@index([slotStart])
   @@index([candidateId])
   @@index([programPanelistId])
+}
+
+model EmailLog {
+  id          Int      @id @default(autoincrement())
+  bookingId   Int?
+  recipient   String
+  subject     String
+  content     String
+  type        EmailType
+  sentAt      DateTime @default(now())
+  status      String   @default("SENT")
+
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([recipient])
+  @@index([bookingId])
+}
+
+enum EmailType {
+  INVITATION
+  BOOKING_CONFIRMATION
+  REMINDER
+  FEEDBACK_REQUEST
+  GENERAL
 }
 
 enum FulfillmentStatus {
